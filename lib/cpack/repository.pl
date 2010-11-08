@@ -63,7 +63,7 @@ cpack_add_repository(User, URL, _Options) :-
 	;   git([clone, '--mirror', URL, BareGitPath], [])
 	),
 	load_meta_data(BareGitPath, Graph),
-	rdf_assert(Graph, cpack:owner, User, Graph).
+	rdf_assert(Graph, cpack:submittedBy, User, Graph).
 
 %%	cpack_update_repository(+User, +URL)
 %
@@ -79,7 +79,6 @@ cpack_update_repository(User, URL) :-
 	git([fetch], [directory(BareGitPath)]),
 	load_meta_data(BareGitPath, Graph).
 
-
 load_meta_data(BareGitPath, Graph) :-
 	url_package(BareGitPath, Package),
 	format(atom(File), 'master:rdf/cpack/~w.ttl', Package),
@@ -94,7 +93,8 @@ load_meta_data(Graph, Format, In) :-
 		 ]).
 
 package_graph(Package, Graph) :-
-	atom_concat('cpack://', Package, Graph).
+	atom_concat('http://www.swi-prolog.org/cliopatria/cpack/',
+		    Package, Graph).
 
 url_package(URL, Package) :-
 	file_base_name(URL, Base),
