@@ -70,14 +70,21 @@ cpack_add_repository(User, URL, _Options) :-
 %	Update a package
 
 cpack_update_repository(User, URL) :-
-	url_package(URL, Package),
-	package_graph(Package, Graph),
-	rdf(Graph, cpack:owner, User, Graph),
-	file_name_extension(Package, git, BareGit),
+	url_package(URL, PackageName),
+	package_graph(PackageName, Graph),
+	Package = Graph,
+	update_allowed(User, Package),
+	file_name_extension(PackageName, git, BareGit),
 	setting(cpack:mirrors, MirrorDir),
 	directory_file_path(MirrorDir, BareGit, BareGitPath),
 	git([fetch], [directory(BareGitPath)]),
 	load_meta_data(BareGitPath, Graph).
+
+update_allowed(User, Package) :-
+	rdf_has(Package, cpack:submittedBy, User), !.
+update_allowed(_, Package) :-
+	permission_error(update, cpack, Package).
+
 
 load_meta_data(BareGitPath, Graph) :-
 	url_package(BareGitPath, Package),
