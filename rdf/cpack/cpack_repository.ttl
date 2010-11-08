@@ -1,0 +1,21 @@
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix cpack:   <http://www.swi-prolog.org/cliopatria/cpack#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+<> a cpack:Application ;
+	cpack:name "cpack_repository" ;
+	dcterms:title "CPACK package repository manager" ;
+	cpack:author <http://www.swi-prolog.org/cliopatria/user/jan> ;
+	cpack:primaryRepository
+	    [ a cpack:GitRepository ;
+	      cpack:gitURL <git://eculture.cs.vu.nl/home/janw/git/ClioPatria/foaf_user.git>
+	    ] ;
+	cpack:description
+
+"""This package manages a CPACK package repository.
+""" .
+
+
+
+
