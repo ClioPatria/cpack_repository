@@ -11,6 +11,7 @@
 	    [ a cpack:GitRepository ;
 	      cpack:gitURL <git://eculture.cs.vu.nl/home/janw/git/ClioPatria/foaf_user.git>
 	    ] ;
+	cpack:requires [ cpack:name "foaf_user" ];
 	cpack:description
 
 """This package manages a CPACK package repository.
