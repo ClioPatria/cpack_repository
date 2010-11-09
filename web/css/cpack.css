@@ -4,6 +4,11 @@ div.cpack table
   border: 1px dotted;
 }
 
+div.cpack br.after-ptable
+{ display:none;				# Remove if you want the table above
+  clear:both;
+}
+
 div.cpack th
 { text-align: right;
 }

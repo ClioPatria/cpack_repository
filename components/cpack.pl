@@ -72,9 +72,10 @@ cpack(Pack, _Options) -->
 		       \cpack_prop(Pack, dcterms:title)]),
 		   table([ \p_row(Pack, cpack:author),
 			   \p_row(Pack, cpack:submittedBy),
-			   \p_row(Pack, cpack:submittedDate)
+			   \p_row(Pack, cpack:submittedDate),
+			   \p_row(Pack, cpack:primaryRepository)
 			 ]),
-		   br([clear(all)]),
+		   br([class('after-ptable')]),
 		   div(class(description),
 		       \cpack_prop(Pack, cpack:description)),
 		   h3('Files in package'),
