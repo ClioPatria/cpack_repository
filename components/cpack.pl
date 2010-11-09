@@ -40,9 +40,20 @@
 :- use_module(components(label)).
 :- use_module(cliopatria(hooks)).
 
+/** <module> CPACK HTML components
+
+This module defines vizualisation primitives   for  CPACK primitives. It
+also hooks the local-view  of  ClioPatria   to  provide  nicer pages for
+instances of CPACK objects such as cpack:Package.
+
+@tbd	Use PlDoc Wiki for rendering the description.  Should that be
+	yet another package?
+*/
+
 %%	cliopatria:list_resource(+Pack)//
 %
-%	Describe a CPACK.
+%	Hook the ClioPatria local view page   to  create a more sensible
+%	represention of a package.
 
 cliopatria:list_resource(Pack) -->
 	{ rdfs_individual_of(Pack, cpack:'Package') },
@@ -61,7 +72,7 @@ cpack(Pack, _Options) -->
 		       \cpack_prop(Pack, dcterms:title)]),
 		   table([ \p_row(Pack, cpack:author),
 			   \p_row(Pack, cpack:submittedBy),
-			   \p_row(Pack, cpack:submittedData)
+			   \p_row(Pack, cpack:submittedDate)
 			 ]),
 		   br([clear(all)]),
 		   div(class(description),
@@ -107,11 +118,20 @@ cpack_prop(R, P0) -->
 	  rdf_has(R, P, O)
 	}, !,
 	(   { rdf_is_literal(O) }
-	->  { literal_text(O, Text) },
-	    html(Text)
+	->  literal(O)
 	;   cpack_link(O)
 	).
 cpack_prop(_, _) --> [].
+
+literal(literal(type(Type, Value))) -->
+	{ rdf_equal(Type, xsd:dateTime),
+	  parse_time(Value, Time), !,
+	  format_time(atom(Human), '%+', Time)
+	},
+	html(Human).
+literal(O) -->
+	{ literal_text(O, Text) },
+	html(Text).
 
 %%	cpack_link(+R)
 %

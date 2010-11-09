@@ -1,5 +1,6 @@
 div.cpack table
-{ float: right;
+{ font-size: 80%;
+  float: right;
   border: 1px dotted;
 }
 

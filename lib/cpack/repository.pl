@@ -101,11 +101,17 @@ update_metadata(BareGitPath, Graph, Options) :-
 	rdf_retractall(_,_,_,Graph),
 	add_files(BareGitPath, Graph, Options),
 	load_meta_data(BareGitPath, Graph, Options),
+	add_timestamp(Graph),
 	(   option(user(User), Options)
 	->  rdf_assert(Graph, cpack:submittedBy, User)
 	;   true
 	).
 
+add_timestamp(Graph) :-
+	get_time(Now),
+	format_time(atom(DateTime), '%FT%T%Oz', Now),
+	rdf_assert(Graph, cpack:submittedDate,
+		   literal(type(xsd:dateTime, DateTime)), Graph).
 
 %%	add_files(+BareGitPath, +Graph, +Options) is det.
 %
