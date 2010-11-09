@@ -42,10 +42,11 @@
 
 http:location(cpack_api,  api(cpack),  []).
 
-:- http_handler(cpack(submit),        cpack_submit_form,   []).
-:- http_handler(cpack(list_packages), cpack_list_packages, []).
-:- http_handler(cpack(my_packages),   cpack_my_packages,   []).
-:- http_handler(cpack_api(submit),    cpack_submit,        []).
+:- http_handler(cpack(submit),		   cpack_submit_form,	     []).
+:- http_handler(cpack(list_packages),	   cpack_list_packages,	     []).
+:- http_handler(cpack(my_packages),	   cpack_my_packages,	     []).
+:- http_handler(cpack(update_my_packages), cpack_update_my_packages, []).
+:- http_handler(cpack_api(submit),	   cpack_submit,	     []).
 
 /** <module> User interaction to manage CPACKS
 */
@@ -114,14 +115,15 @@ cpack_list_packages(_Request) :-
 cpack_my_packages(_Request) :-
 	logged_on(User),
 	user_property(User, url(UserURI)),
-	list_packages([user(UserURI)]).
+	list_packages([user(UserURI), update_all_link(true)]).
 
 list_packages(Options) :-
 	findall(Package, current_package(Package, Options), Packages),
 	reply_html_page(cliopatria(cpack),
 			title('CPACK packages'),
 			[ h1('CPACK packages'),
-			  \package_table(Packages, [])
+			  \package_table(Packages, []),
+			  \update_all_link(Options)
 			]).
 
 current_package(Package, Options) :-
@@ -154,3 +156,21 @@ package_row(Package, _Options) -->
 	       td(\cpack_prop(Package, cpack:submittedBy))
 	     ]).
 
+update_all_link(Options) -->
+	{ option(update_all_link(true), Options),
+	  http_link_to_id(cpack_update_my_packages, [], HREF)
+	}, !,
+	html(p([a(href(HREF), 'Update'), ' all my packages'])).
+
+%%	cpack_update_my_packages(+Request) is det.
+%
+%	Update all packages owned by the currently logged on user.
+
+cpack_update_my_packages(_Request) :-
+	logged_on(User),
+	user_property(User, url(UserURI)),
+	findall(Package, current_package(Package, [user(UserURI)]), Packages),
+	forall(member(Package, Packages),
+	       authorized(write(cpack, Package))),
+	call_showing_messages(maplist(cpack_update_package(UserURI), Packages),
+			      []).

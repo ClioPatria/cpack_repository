@@ -74,7 +74,8 @@ cpack(Pack, _Options) -->
 			   \p_row(Pack, cpack:author),
 			   \p_row(Pack, cpack:submittedBy),
 			   \p_row(Pack, cpack:submittedDate),
-			   \p_row(Pack, cpack:primaryRepository)
+			   \p_row(Pack, cpack:clonedRepository),
+			   \p_row(Pack, cpack:mirrorRepository)
 			 ]),
 		   br([class('after-ptable')]),
 		   div(class(description),
