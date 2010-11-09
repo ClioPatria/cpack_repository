@@ -88,7 +88,7 @@ cpack_update_repository(User, URL, Options) :-
 	update_metadata(BareGitPath, Graph, [user(User)|Options]).
 
 update_allowed(User, Package) :-
-	rdf_has(Package, cpack:submittedBy, User), !.
+	rdf_has(Package, cpack:submittedBy, User, Package), !.
 update_allowed(_, Package) :-
 	permission_error(update, cpack, Package).
 
@@ -125,7 +125,9 @@ read_files(end_of_file, _, _) :- !.
 read_files(Line, Graph, In) :-
 	atom_codes(FileName, Line),
 	atomic_list_concat([Graph, /, FileName], File),
-	rdf_assert(File, cpack:name, literal(FileName), Graph),
+	file_base_name(FileName, BaseName),
+	rdf_assert(File, cpack:path, literal(FileName), Graph),
+	rdf_assert(File, cpack:name, literal(BaseName), Graph),
 	rdf_assert(File, cpack:inPack, Graph, Graph),
 	rdf_assert(File, rdf:type, cpack:'File', Graph),
 	read_line_to_codes(In, Line2),

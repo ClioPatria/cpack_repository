@@ -43,6 +43,7 @@ http:location(cpack_api,  api(cpack),  []).
 
 :- http_handler(cpack(submit),        cpack_submit_form,   []).
 :- http_handler(cpack(list_packages), cpack_list_packages, []).
+:- http_handler(cpack(my_packages),   cpack_my_packages,   []).
 :- http_handler(cpack_api(submit),    cpack_submit,        []).
 
 /** <module> User interaction to manage CPACKS
@@ -99,20 +100,36 @@ cpack_submit(Request) :-
 			      []).
 
 
-%%	cpack_list_packages(+Request)
+%%	cpack_list_packages(+Request) is det.
+%%	cpack_my_packages(+Request) is det.
 %
-%	List registered CPACK packages.
+%	List registered CPACK packages.   The  variant cpack_my_packages
+%	lists packages for  the  currently  logged   on  user.  It  is a
+%	separate handler to make it accessible from the menu.
 
 cpack_list_packages(_Request) :-
-	findall(Package, current_package(Package), Packages),
+	list_packages([]).
+
+cpack_my_packages(_Request) :-
+	logged_on(User),
+	user_property(User, url(UserURI)),
+	list_packages([user(UserURI)]).
+
+list_packages(Options) :-
+	findall(Package, current_package(Package, Options), Packages),
 	reply_html_page(cliopatria(cpack),
 			title('CPACK packages'),
 			[ h1('CPACK packages'),
 			  \package_table(Packages, [])
 			]).
 
-current_package(Package) :-
+current_package(Package, Options) :-
+	(   option(user(User), Options)
+	->  rdf_has(Package, cpack:submittedBy, User)
+	;   true
+	),
 	rdfs_individual_of(Package, cpack:'Package').
+
 
 package_table(Packages, Options) -->
 	html(table(class(block),
