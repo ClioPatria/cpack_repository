@@ -31,10 +31,15 @@
 :- module(cpack_repository,
 	  [ cpack_add_repository/3	% +User, +GitRepo, +Options
 	  ]).
+:- use_module(library(lists)).
 :- use_module(library(git)).
 :- use_module(library(settings)).
 :- use_module(library(semweb/rdf_db)).
+:- use_module(library(semweb/rdf_turtle)).
 :- use_module(library(filesex)).
+:- use_module(library(http/http_wrapper)).
+:- use_module(library(http/http_host)).
+
 
 /** <module> Manage CPACK repositories
 
@@ -49,9 +54,12 @@
 %
 %	Add a git repository from URL. Fetch  the meta-data into a graph
 %	named =|cpack:<package>|= and add a   provenance  statement that
-%	indicates the creator of the graph.
+%	indicates the creator of the graph.  Options include:
+%
+%	    * branch(Branch)
+%	    Add the given branch rather than the master
 
-cpack_add_repository(User, URL, _Options) :-
+cpack_add_repository(User, URL, Options) :-
 	url_package(URL, Package),
 	package_graph(Package, Graph),
 	file_name_extension(Package, git, BareGit),
@@ -59,17 +67,16 @@ cpack_add_repository(User, URL, _Options) :-
 	make_directory_path(MirrorDir),
 	directory_file_path(MirrorDir, BareGit, BareGitPath),
 	(   exists_directory(BareGitPath)
-	->  cpack_update_repository(User, URL)
+	->  cpack_update_repository(User, URL, Options)
 	;   git([clone, '--mirror', URL, BareGitPath], [])
 	),
-	load_meta_data(BareGitPath, Graph),
-	rdf_assert(Graph, cpack:submittedBy, User, Graph).
+	update_metadata(BareGitPath, Graph, [user(User)|Options]).
 
 %%	cpack_update_repository(+User, +URL)
 %
 %	Update a package
 
-cpack_update_repository(User, URL) :-
+cpack_update_repository(User, URL, Options) :-
 	url_package(URL, PackageName),
 	package_graph(PackageName, Graph),
 	Package = Graph,
@@ -78,7 +85,7 @@ cpack_update_repository(User, URL) :-
 	setting(cpack:mirrors, MirrorDir),
 	directory_file_path(MirrorDir, BareGit, BareGitPath),
 	git([fetch], [directory(BareGitPath)]),
-	load_meta_data(BareGitPath, Graph).
+	update_metadata(BareGitPath, Graph, [user(User)|Options]).
 
 update_allowed(User, Package) :-
 	rdf_has(Package, cpack:submittedBy, User), !.
@@ -86,22 +93,76 @@ update_allowed(_, Package) :-
 	permission_error(update, cpack, Package).
 
 
-load_meta_data(BareGitPath, Graph) :-
-	url_package(BareGitPath, Package),
-	format(atom(File), 'master:rdf/cpack/~w.ttl', Package),
-	git_process_output([show, File],
-			   load_meta_data(Graph, turtle),
+%%	update_metadata(+BareGitPath, +Graph, +Options) is det.
+%
+%	Update metadata for a repository
+
+update_metadata(BareGitPath, Graph, Options) :-
+	rdf_retractall(_,_,_,Graph),
+	add_files(BareGitPath, Graph, Options),
+	load_meta_data(BareGitPath, Graph, Options),
+	(   option(user(User), Options)
+	->  rdf_assert(Graph, cpack:submittedBy, User)
+	;   true
+	).
+
+
+%%	add_files(+BareGitPath, +Graph, +Options) is det.
+%
+%	Add objects for the files in BareGitPath to Graph.
+
+add_files(BareGitPath, Graph, Options) :-
+	option(branch(Branch), Options, master),
+	git_process_output(['ls-tree', '-r', '--name-only', Branch],
+			   read_files(Graph),
 			   [directory(BareGitPath)]).
 
-load_meta_data(Graph, Format, In) :-
-	rdf_load(stream(In),
-		 [ graph(Graph),
-		   format(Format)
-		 ]).
+read_files(Graph, In) :-
+	read_line_to_codes(In, Line1),
+	read_files(Line1, Graph, In).
+
+read_files(end_of_file, _, _) :- !.
+read_files(Line, Graph, In) :-
+	atom_codes(FileName, Line),
+	atomic_list_concat([Graph, /, FileName], File),
+	rdf_assert(File, cpack:name, literal(FileName), Graph),
+	rdf_assert(File, cpack:inPack, Graph, Graph),
+	rdf_assert(File, rdf:type, cpack:'File', Graph),
+	read_line_to_codes(In, Line2),
+	read_files(Line2, Graph, In).
+
+
+%%	load_meta_data(+BareGitPath, +Graph, +Options) is det.
+%
+%	Load the meta-data from the GIT  repository BareGitPath into the
+%	named graph Graph.
+
+load_meta_data(BareGitPath, Graph, Options) :-
+	option(branch(Branch), Options, master),
+	url_package(BareGitPath, Package),
+	format(atom(File), '~w:rdf/cpack/~w.ttl', [Branch, Package]),
+	git_process_output([show, File],
+			   rdf_load_git_stream(Graph, turtle),
+			   [directory(BareGitPath)]).
+
+rdf_load_git_stream(Graph, Format, In) :-
+	set_stream(In, file_name(Graph)),
+	rdf_read_turtle(stream(In),
+			RDF,
+			[ base_uri(Graph),
+			  format(Format)
+			]),
+	forall(member(rdf(S,P,O), RDF),
+	       rdf_assert(S,P,O,Graph)).
 
 package_graph(Package, Graph) :-
-	atom_concat('http://www.swi-prolog.org/cliopatria/cpack/',
-		    Package, Graph).
+	http_current_request(Request),
+	http_current_host(Request, Host, Port,
+			  [ global(true)
+			  ]),
+	format(atom(Graph), 'http://~w:~w/cpack/~w',
+	       [ Host, Port, Package ]).
+
 
 url_package(URL, Package) :-
 	file_base_name(URL, Base),

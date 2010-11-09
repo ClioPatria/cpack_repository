@@ -62,17 +62,16 @@ cpack_submit_form(_Request) :-
 			  form([ action(location_by_id(cpack_submit))
 			       ],
 			       table(class(form),
-				     [ tr([ th(class(label), 'GIT repository:'),
-					    td(input([ name(giturl),
-						       size(50)
-						     ]))
-					  ]),
-				       tr(class(buttons),
-					  [ th([align(right), colspan(2)],
-					       input([ type(submit),
-						       value('Register')
-						     ]))
-					  ])
+				     [ \form_input('GIT repository:',
+						   input([ name(giturl),
+							   size(50)
+							 ])),
+				       \form_input('branch:',
+						   input([ name(branch),
+							   value(master),
+							   size(50)
+							 ])),
+				       \form_submit('Register')
 				     ]))
 			]).
 
@@ -86,11 +85,17 @@ cpack_submit(Request) :-
 	http_parameters(Request,
 			[ giturl(GitURL,
 				 [ description('URL of GIT repository')
+				 ]),
+			  branch(Branch,
+				 [ default(master),
+				   description('Branch in the repo')
 				 ])
 			]),
 	authorized(write(cpack, GitURL)),
 	user_property(User, url(UserURL)),
-	call_showing_messages(cpack_add_repository(UserURL, GitURL, []),
+	call_showing_messages(cpack_add_repository(UserURL, GitURL,
+						   [ branch(Branch)
+						   ]),
 			      []).
 
 
