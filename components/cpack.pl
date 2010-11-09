@@ -70,7 +70,8 @@ cpack(Pack, _Options) -->
 	html(div(class(cpack),
 		 [ h2(['Package "', Name, '" -- ',
 		       \cpack_prop(Pack, dcterms:title)]),
-		   table([ \p_row(Pack, cpack:author),
+		   table([ \p_row(Pack, rdf:type),
+			   \p_row(Pack, cpack:author),
 			   \p_row(Pack, cpack:submittedBy),
 			   \p_row(Pack, cpack:submittedDate),
 			   \p_row(Pack, cpack:primaryRepository)
@@ -78,6 +79,7 @@ cpack(Pack, _Options) -->
 		   br([class('after-ptable')]),
 		   div(class(description),
 		       \cpack_prop(Pack, cpack:description)),
+		   br(clear(all)),
 		   h3('Files in package'),
 		   ul(class(files),
 		      \files_in_pack(Pack))
