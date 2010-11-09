@@ -29,7 +29,9 @@
 */
 
 :- module(cpack_submit, []).
-:- use_bundle(html_page).
+:- include(bundle(html_page)).
+:- use_module(library(apply)).
+:- use_module(library(lists)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(semweb/rdf_label)).
