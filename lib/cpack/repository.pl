@@ -103,7 +103,7 @@ update_metadata(BareGitPath, Graph, Options) :-
 	load_meta_data(BareGitPath, Graph, Options),
 	add_timestamp(Graph),
 	(   option(user(User), Options)
-	->  rdf_assert(Graph, cpack:submittedBy, User)
+	->  rdf_assert(Graph, cpack:submittedBy, User, Graph)
 	;   true
 	).
 
