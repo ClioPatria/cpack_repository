@@ -38,6 +38,7 @@
 :- use_module(library(cpack/repository)).
 :- use_module(components(messages)).
 :- use_module(components(label)).
+:- use_module(components(cpack)).
 
 http:location(cpack_api,  api(cpack),  []).
 
@@ -148,40 +149,8 @@ package_rows([H|T], Row, Options) -->
 
 package_row(Package, _Options) -->
 	html([ td(\cpack_link(Package)),
-	       td(\prop(Package, dcterms:title)),
-	       td(\prop(Package, rdf:type)),
-	       td(\prop(Package, cpack:submittedBy))
+	       td(\cpack_prop(Package, dcterms:title)),
+	       td(\cpack_prop(Package, rdf:type)),
+	       td(\cpack_prop(Package, cpack:submittedBy))
 	     ]).
-
-prop(R, P0) -->
-	{ rdf_global_id(P0, P),
-	  rdf_has(R, P, O)
-	}, !,
-	(   { rdf_is_literal(O) }
-	->  { literal_text(O, Text) },
-	    html(Text)
-	;   cpack_link(O)
-	).
-prop(_, _) --> [].
-
-%%	cpack_link(+R)
-%
-%	Display a link to a CPACK resource
-
-:- rdf_meta
-	cpack_label_property(r).
-
-cpack_link(R) -->
-	{ cpack_label_property(P),
-	  rdf_has(R, P, Name), !,
-	  literal_text(Name, Text),
-	  resource_link(R, HREF)
-	},
-	html(a(href(HREF), Text)).
-cpack_link(R) -->
-	rdf_link(R).
-
-cpack_label_property(cpack:name).
-cpack_label_property(foaf:name).
-cpack_label_property(rdfs:label).
 
