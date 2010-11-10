@@ -58,6 +58,9 @@ instances of CPACK objects such as cpack:Package.
 cliopatria:list_resource(Pack) -->
 	{ rdfs_individual_of(Pack, cpack:'Package') },
 	cpack(Pack, []).
+cliopatria:list_resource(Pack) -->
+	{ rdfs_individual_of(Pack, cpack:'File') },
+	cpack_file(Pack, []).
 
 %%	cpack(+Pack, +Options)// is det.
 %
@@ -96,6 +99,26 @@ list_li([H|T]) -->
 	html(li(\cpack_link(H))),
 	list_li(T).
 
+
+%%	cpack_file(+FileURL, Options)// is det.
+%
+%	Show info about the file FileURL
+
+cpack_file(FileURL, _Options) -->
+	{ rdf_has(FileURL, cpack:path, literal(Path))
+	},
+	html_requires(css('cpack.css')),
+	html(div(class(file),
+		 [ h2(['File "', Path, '"']),
+		   table([ \p_row(FileURL, cpack:inPack)
+			 ])
+		 ])).
+
+
+
+		 /*******************************
+		 *	       BASICS		*
+		 *******************************/
 
 %%	p_row(+R, +P)// is det.
 %

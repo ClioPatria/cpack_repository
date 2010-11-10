@@ -30,9 +30,12 @@
 
 :- module(cpack_repository,
 	  [ cpack_add_repository/3,	% +User, +GitRepo, +Options
-	    cpack_update_package/2	% +User, +Package
+	    cpack_update_package/2,	% +User, +Package
+	    cpack_our_mirror/2,		% +Package, -MirrorDir
+	    cpack_shortlog/3		% +Package, -ShortLog, +Options
 	  ]).
 :- use_module(library(lists)).
+:- use_module(library(record)).
 :- use_module(library(git)).
 :- use_module(library(settings)).
 :- use_module(library(semweb/rdf_db)).
@@ -276,6 +279,70 @@ url_package(URL, Package) :-
 	->  Package = Package0
 	;   Package = Base
 	).
+
+		 /*******************************
+		 *	     FETCH INFO		*
+		 *******************************/
+
+%%	cpack_our_mirror(+Pack, -Dir) is det.
+%
+%	Dir is the directory holding the bare git repository for Pack.
+
+cpack_our_mirror(Pack, BareGitPath) :-
+	rdf_has(Pack, cpack:name, literal(PackageName)),
+	file_name_extension(PackageName, git, BareGit),
+	setting(cpack:mirrors, MirrorDir),
+	directory_file_path(MirrorDir, BareGit, BareGitPath).
+
+%%	cpack_shortlog(+Pack, -ShortLog, Options) is det.
+%
+%	Fetch information like the GitWeb change overview.
+%
+%	@param ShortLog is a list of =git_log= records.
+
+:- record
+	git_log(hash:atom,
+		date:atom,
+		committer:atom,
+		title:atom,
+		decoration:atom).
+
+cpack_shortlog(Pack, ShortLog, Options) :-
+	option(limit(Limit), Options, 10),
+	cpack_our_mirror(Pack, BareGitPath),
+	git_process_output([log, '-n', Limit,
+			    '--format=%H%x00%ci%x00%cn%x00%s%x00%d%x00'],
+			   read_shortlog(ShortLog),
+			   [directory(BareGitPath)]).
+
+
+read_shortlog(ShortLog, In) :-
+	read_line_to_codes(In, Line0),
+	read_shortlog(Line0, In, ShortLog).
+
+read_shortlog(end_of_file, _, []).
+read_shortlog(Line, In, [H|T]) :-
+	phrase(parse_shortlog(H), Line),
+	read_line_to_codes(In, Line1),
+	read_shortlog(Line1, In, T).
+
+parse_shortlog(Record) -->
+	{ default_git_log(Record) },
+	field(Record, hash),
+	field(Record, date),
+	field(Record, committer),
+	field(Record, title),
+	field(Record, decoration).
+
+field(Record, Field) -->
+	to_nul_s(Codes),
+	{ atom_codes(Value, Codes),
+	  git_log_data(Field, Record, Value)
+	}.
+
+to_nul_s([]) --> [0], !.
+to_nul_s([H|T]) --> [H], to_nul_s(T).
+
 
 		 /*******************************
 		 *	      MESSAGES		*
