@@ -145,10 +145,17 @@ cpack_file(FileURL, _Options) -->
 			   \p_row(FileURL, cpack:module)
 			 ]),
 		   br(clear(all)),
-		   h3('Exported predicates'),
-		   ul(class(exports),
-		      \exported_predicates(FileURL))
+		   \prolog_file(FileURL)
 		 ])).
+
+prolog_file(FileURL) -->
+	{ rdfs_individual_of(FileURL, cpack:'PrologFile') }, !,
+	html([ h3('Exported predicates'),
+	       ul(class(exports),
+		  \exported_predicates(FileURL))
+	     ]).
+prolog_file(_) --> [].
+
 
 exported_predicates(FileURL) -->
 	{ findall(PI, rdf_has(FileURL, cpack:exportsPredicate, literal(PI)), List)

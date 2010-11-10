@@ -89,16 +89,21 @@ file_property(File, cpack:exportsPredicate, literal(Pred)) :-
 	xref_exported(File, Callable),
 	functor(Callable, Name, Arity),
 	format(atom(Pred), '~w/~w', [Name, Arity]).
-file_property(File, UsesFile, literal(Atom)) :-
+file_property(File, UsesFile, Uses) :-
 	xref_uses_file(File, Spec, Path),
 	format(atom(Atom), '~q', Spec),
-	(   Path == '<not_found>'
-	->  rdf_equal(UsesFile, cpack:usesPackageFile)
-	;   system_file(Path)
-	->  rdf_equal(UsesFile, cpack:usesSystemFile)
-	;   cliopatria_file(Path)
-	->  rdf_equal(UsesFile, cpack:usesClioPatriaFile)
-	;   rdf_equal(UsesFile, cpack:usesPackageFile)
+	(   rdf_is_resource(Path),
+	    rdfs_individual_of(Path, cpack:'File')
+	->  Uses = Path
+	;   Uses = literal(Atom),
+	    (   Path == '<not_found>'
+	    ->  rdf_equal(UsesFile, cpack:usesPackageFile)
+	    ;   system_file(Path)
+	    ->  rdf_equal(UsesFile, cpack:usesSystemFile)
+	    ;   cliopatria_file(Path)
+	    ->  rdf_equal(UsesFile, cpack:usesClioPatriaFile)
+	    ;   rdf_equal(UsesFile, cpack:usesPackageFile)
+	    )
 	).
 
 
@@ -132,7 +137,8 @@ loaded_package_file(Path) :-
 
 :- multifile
 	prolog:xref_open_source/2,
-	prolog:xref_source_identifier/2.
+	prolog:xref_source_identifier/2,
+	prolog:xref_source_file/3.
 
 prolog:xref_open_source(File, Stream) :-
 	rdf_is_resource(File),
@@ -148,4 +154,25 @@ prolog:xref_open_source(File, Stream) :-
 
 prolog:xref_source_identifier(File, File) :-
 	rdf_is_resource(File),
-	rdfs_individual_of(File, cpack:'File').
+	rdfs_individual_of(File, cpack:'PrologFile').
+
+%%	prolog:xref_source_file(+Spec, -File, +Options) is semidet.
+%
+%	True when File is the URI  of   a  file referenced by Spec. This
+%	predicate hooks into xref_source_file/3, making  it possible for
+%	the cross-referencer to analyse files in GIT repositories.
+
+prolog:xref_source_file(Spec, File, _Options) :-
+	rdf_is_resource(Spec),
+	(   File = Spec
+	;   prolog_file_type(Ext, prolog),
+	    file_name_extension(Spec, Ext, File)
+	),
+	rdfs_individual_of(File, cpack:'File'), !.
+prolog:xref_source_file(Spec, File, _Options) :-
+	callable(Spec),
+	Spec =.. [Package, Local],
+	path_segments_atom(Local, Path),
+	rdf_has(File, cpack:path, Path),
+	rdf_has(File, cpack:inPack, Pack),
+	rdf_has(Pack, cpack:packageName, literal(Package)), !.
