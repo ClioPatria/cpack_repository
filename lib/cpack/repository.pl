@@ -45,7 +45,7 @@
 :- use_module(library(filesex)).
 :- use_module(library(http/http_wrapper)).
 :- use_module(library(http/http_host)).
-
+:- use_module(dependency).
 
 /** <module> Manage CPACK repositories
 
@@ -111,7 +111,7 @@ cpack_update_repository(User, URL, Options) :-
 	setting(cpack:mirrors, MirrorDir),
 	directory_file_path(MirrorDir, BareGit, BareGitPath),
 	git_hash(BareGitPath, Branch, Hash0),
-	git([fetch, origin, Branch], [directory(BareGitPath)]),
+	git([fetch, origin], [directory(BareGitPath)]),
 	git_hash(BareGitPath, Branch, Hash1),
 	print_message(informational, cpack(updated(Graph, Hash0, Hash1))),
 	(   (   Hash1 \== Hash0
@@ -162,7 +162,8 @@ update_metadata(BareGitPath, Graph, Options) :-
 	    rdf_assert(Cloned, cpack:branch, literal(Branch), Graph),
 	    rdf_assert(Mirror, cpack:hash, literal(Hash), Graph)
 	;   true
-	).
+	),
+	xref_cpack(Graph).
 
 add_timestamp(Graph) :-
 	get_time(Now),
@@ -232,14 +233,24 @@ read_files(Graph, In) :-
 read_files(end_of_file, _, _) :- !.
 read_files(Line, Graph, In) :-
 	atom_codes(FileName, Line),
-	atomic_list_concat([Graph, /, FileName], File),
 	file_base_name(FileName, BaseName),
+	file_type(BaseName, Class),
+	atomic_list_concat([Graph, /, FileName], File),
 	rdf_assert(File, cpack:path, literal(FileName), Graph),
 	rdf_assert(File, cpack:name, literal(BaseName), Graph),
 	rdf_assert(File, cpack:inPack, Graph, Graph),
-	rdf_assert(File, rdf:type, cpack:'File', Graph),
+	rdf_assert(File, rdf:type, Class, Graph),
 	read_line_to_codes(In, Line2),
 	read_files(Line2, Graph, In).
+
+
+:- rdf_meta
+	file_type(+, r).
+
+file_type(File, cpack:'PrologFile') :-
+	file_name_extension(_Base, Ext, File),
+	prolog_file_type(Ext, prolog), !.
+file_type(_, cpack:'File').
 
 
 %%	load_meta_data(+BareGitPath, +Graph, +Options) is det.

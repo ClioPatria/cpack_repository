@@ -138,12 +138,27 @@ cpack_file(FileURL, _Options) -->
 	{ rdf_has(FileURL, cpack:path, literal(Path))
 	},
 	html_requires(css('cpack.css')),
-	html(div(class(file),
+	html(div(class(cpack),
 		 [ h2(['File "', Path, '"']),
-		   table([ \p_row(FileURL, cpack:inPack)
-			 ])
+		   table(class(infobox),
+			 [ \p_row(FileURL, cpack:inPack),
+			   \p_row(FileURL, cpack:module)
+			 ]),
+		   br(clear(all)),
+		   h3('Exported predicates'),
+		   ul(class(exports),
+		      \exported_predicates(FileURL))
 		 ])).
 
+exported_predicates(FileURL) -->
+	{ findall(PI, rdf_has(FileURL, cpack:exportsPredicate, literal(PI)), List)
+	},
+	atoms_li(List).
+
+atoms_li([]) --> [].
+atoms_li([H|T]) -->
+	html(li(H)),
+	atoms_li(T).
 
 
 		 /*******************************

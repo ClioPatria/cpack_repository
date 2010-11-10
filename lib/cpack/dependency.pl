@@ -33,6 +33,7 @@
 	    xref_cpack_file/1
 	  ]).
 :- use_module(library(semweb/rdf_db)).
+:- use_module(library(semweb/rdfs)).
 :- use_module(library(git)).
 :- use_module(library(prolog_xref)).
 :- use_module(repository).
@@ -77,12 +78,52 @@ xref_to_rdf(File) :-
 	forall(file_property(File, P, O),
 	       rdf_assert(File, P, O, Graph)).
 
+%%	file_property(+File, ?P, ?O) is nondet.
+%
+%	True when rdf(File,P,O) describes a property   of  File. Used to
+%	generate all properties from the cross-referencer output.
+
 file_property(File, cpack:module, literal(Module)) :-
 	xref_module(File, Module).
 file_property(File, cpack:exportsPredicate, literal(Pred)) :-
 	xref_exported(File, Callable),
 	functor(Callable, Name, Arity),
 	format(atom(Pred), '~w/~w', [Name, Arity]).
+file_property(File, UsesFile, literal(Atom)) :-
+	xref_uses_file(File, Spec, Path),
+	format(atom(Atom), '~q', Spec),
+	(   Path == '<not_found>'
+	->  rdf_equal(UsesFile, cpack:usesPackageFile)
+	;   system_file(Path)
+	->  rdf_equal(UsesFile, cpack:usesSystemFile)
+	;   cliopatria_file(Path)
+	->  rdf_equal(UsesFile, cpack:usesClioPatriaFile)
+	;   rdf_equal(UsesFile, cpack:usesPackageFile)
+	).
+
+
+%%	system_file(+Path) is semidet.
+%%	cliopatria_file(+Path) is semidet.
+%
+%	Classify file according to their origin.
+
+system_file(Path) :-
+	current_prolog_flag(home, Home),
+	sub_atom(Path, 0, _, _, Home).
+
+cliopatria_file(Path) :-
+	absolute_file_name(cliopatria(.),
+			   ClioHome,
+			   [ file_type(directory),
+			     access(read)
+			   ]),
+	sub_atom(Path, 0, _, _, ClioHome),
+	\+ loaded_package_file(Path).
+
+loaded_package_file(Path) :-
+	setting(cpack:package_directory, PackageDir),
+	absolute_file_name(PackageDir, PackageRoot),
+	sub_atom(Path, 0, _, _, PackageRoot).
 
 
 		 /*******************************
@@ -90,9 +131,11 @@ file_property(File, cpack:exportsPredicate, literal(Pred)) :-
 		 *******************************/
 
 :- multifile
-	prolog:xref_open_source/2.
+	prolog:xref_open_source/2,
+	prolog:xref_source_identifier/2.
 
 prolog:xref_open_source(File, Stream) :-
+	rdf_is_resource(File),
 	rdf_has(File, cpack:path, literal(Path)),
 	rdf_has(File, cpack:inPack, Pack),
 	(   rdf_has(File, cpack:mirrorRepository, Mirror),
@@ -102,3 +145,7 @@ prolog:xref_open_source(File, Stream) :-
 	),
 	cpack_our_mirror(Pack, BareGitDir),
 	git_open_file(BareGitDir, Path, Branch, Stream).
+
+prolog:xref_source_identifier(File, File) :-
+	rdf_is_resource(File),
+	rdfs_individual_of(File, cpack:'File').
