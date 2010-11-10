@@ -43,7 +43,7 @@
 
 /** <module> CPACK HTML components
 
-This module defines vizualisation primitives   for  CPACK primitives. It
+This module defines vizualisation  primitives   for  CPACK resources. It
 also hooks the local-view  of  ClioPatria   to  provide  nicer pages for
 instances of CPACK objects such as cpack:Package.
 

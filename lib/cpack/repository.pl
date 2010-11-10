@@ -290,7 +290,7 @@ url_package(URL, Package) :-
 %	Dir is the directory holding the bare git repository for Pack.
 
 cpack_our_mirror(Pack, BareGitPath) :-
-	rdf_has(Pack, cpack:name, literal(PackageName)),
+	rdf_has(Pack, cpack:packageName, literal(PackageName)),
 	file_name_extension(PackageName, git, BareGit),
 	setting(cpack:mirrors, MirrorDir),
 	directory_file_path(MirrorDir, BareGit, BareGitPath).

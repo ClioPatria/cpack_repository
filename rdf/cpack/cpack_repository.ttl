@@ -4,7 +4,7 @@
 @prefix dcterms: <http://purl.org/dc/terms/> .
 
 <> a cpack:Application ;
-	cpack:name "cpack_repository" ;
+	cpack:packageName "cpack_repository" ;
 	dcterms:title "CPACK package repository manager" ;
 	cpack:author <http://www.swi-prolog.org/cliopatria/user/jan> ;
 	cpack:primaryRepository
