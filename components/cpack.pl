@@ -34,6 +34,7 @@
 	    cpack_prop//2		% +Resource, +Prop
 	  ]).
 :- include(bundle(html_page)).
+:- use_module(library(cpack/repository)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(semweb/rdf_label)).
@@ -73,7 +74,8 @@ cpack(Pack, _Options) -->
 	html(div(class(cpack),
 		 [ h2(['Package "', Name, '" -- ',
 		       \cpack_prop(Pack, dcterms:title)]),
-		   table([ \p_row(Pack, rdf:type),
+		   table(class(infobox),
+			 [ \p_row(Pack, rdf:type),
 			   \p_row(Pack, cpack:author),
 			   \p_row(Pack, cpack:submittedBy),
 			   \p_row(Pack, cpack:submittedDate),
@@ -84,11 +86,39 @@ cpack(Pack, _Options) -->
 		   div(class(description),
 		       \cpack_prop(Pack, cpack:description)),
 		   br(clear(all)),
+		   h3('Recent changes'),
+		   \git_shortlog(Pack, [limit(5)]),
 		   h3('Files in package'),
 		   ul(class(files),
 		      \files_in_pack(Pack))
 		 ])).
 
+
+git_shortlog(Pack, Options) -->
+	{ cpack_shortlog(Pack, ShortLog, Options) },
+	html(table(class(git_shortlog),
+		   \shortlog_rows(ShortLog, 1))).
+
+shortlog_rows([], _) --> [].
+shortlog_rows([H|T], Row) -->
+	odd_even_row(Row, Next, \shortlog_row(H)),
+	shortlog_rows(T, Next).
+
+shortlog_row(Record) -->
+	html([ \td_git_log(date, Record),
+	       \td_git_log(committer, Record),
+	       \td_git_log(title, Record)
+	     ]).
+
+td_git_log(Field, Record) -->
+	{ git_log_data(Field, Record, Value) },
+	html(td(class(Field), Value)).
+
+
+%%	files_in_pack(+Pack)// is det.
+%
+%	Create a =ul= for all files that   appear  in the pack. Maybe we
+%	should consider a tree-styled nested =ul=?
 
 files_in_pack(Pack) -->
 	{ findall(File, rdf_has(File, cpack:inPack, Pack), Files) },
@@ -96,7 +126,7 @@ files_in_pack(Pack) -->
 
 list_li([]) --> [].
 list_li([H|T]) -->
-	html(li(\cpack_link(H))),
+	html(li(\cpack_link(H, cpack:path))),
 	list_li(T).
 
 
@@ -160,21 +190,29 @@ literal(O) -->
 	{ literal_text(O, Text) },
 	html(Text).
 
-%%	cpack_link(+R)
+%%	cpack_link(+R)// is det.
+%%	cpack_link(+R, +P)// is det.
 %
-%	Display a link to a CPACK resource
+%	Display a link to a CPACK   resource.  The version cpack_link//2
+%	can be used to select a given property for producing the label.
 
 :- rdf_meta
 	cpack_label_property(r).
 
 cpack_link(R) -->
-	{ cpack_label_property(P),
+	cpack_link(R, '-').
+
+cpack_link(R, P0) -->
+	{ (   P0 \== (-),
+	      rdf_global_id(P0, P)
+	  ;   cpack_label_property(P)
+	  ),
 	  rdf_has(R, P, Name), !,
 	  literal_text(Name, Text),
 	  resource_link(R, HREF)
 	},
 	html(a(href(HREF), Text)).
-cpack_link(R) -->
+cpack_link(R, _) -->
 	rdf_link(R).
 
 cpack_label_property(cpack:name).

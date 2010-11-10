@@ -32,7 +32,8 @@
 	  [ cpack_add_repository/3,	% +User, +GitRepo, +Options
 	    cpack_update_package/2,	% +User, +Package
 	    cpack_our_mirror/2,		% +Package, -MirrorDir
-	    cpack_shortlog/3		% +Package, -ShortLog, +Options
+	    cpack_shortlog/3,		% +Package, -ShortLog, +Options
+	    git_log_data/3		% ?Field, ?Record, ?Data
 	  ]).
 :- use_module(library(lists)).
 :- use_module(library(record)).
@@ -311,7 +312,7 @@ cpack_shortlog(Pack, ShortLog, Options) :-
 	option(limit(Limit), Options, 10),
 	cpack_our_mirror(Pack, BareGitPath),
 	git_process_output([log, '-n', Limit,
-			    '--format=%H%x00%ci%x00%cn%x00%s%x00%d%x00'],
+			    '--format=%H%x00%cr%x00%cn%x00%s%x00%d%x00'],
 			   read_shortlog(ShortLog),
 			   [directory(BareGitPath)]).
 

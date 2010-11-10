@@ -163,6 +163,7 @@ update_all_link(Options) -->
 	  http_link_to_id(cpack_update_my_packages, [], HREF)
 	}, !,
 	html(p([a(href(HREF), 'Update'), ' all my packages'])).
+update_all_link(_) --> [].
 
 %%	cpack_update_my_packages(+Request) is det.
 %

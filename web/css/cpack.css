@@ -1,4 +1,4 @@
-div.cpack table
+div.cpack table.infobox
 { font-size: 80%;
   float: right;
   border: 1px dotted;
@@ -17,8 +17,29 @@ div.cpack div.description
 { margin-top: 1em;
 }
 
+table.git_shortlog
+{ margin-left: 5%;
+  font-size: 80%;
+  border-spacing: 0px;
+}
+
+table.git_shortlog td
+{ padding: 0px 5px;
+}
+
+table.git_shortlog td.title
+{ font-weight: bold;
+}
+
+table.git_shortlog td.committer
+{ font-style: italic;
+  font-weight: 200;
+}
+
 ul.files
-{ list-style-type: none;
+{ margin-left: 5%;
+  padding-left: 0px;
+  list-style-type: none;
 }
 
 ul.files li
