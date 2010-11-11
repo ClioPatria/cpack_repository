@@ -29,7 +29,8 @@
 */
 
 :- module(cpack_dependency,
-	  [ file_used_by_file_in_package/3 % +File, -UsedBy, -Package
+	  [ file_used_by_file_in_package/3, % +File, -UsedBy, -Package
+	    cpack_requires/3		% +Package, -Package, -Why
 	  ]).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
@@ -49,3 +50,24 @@ file_used_by_file_in_package(File, UsedBy, Pack) :-
 	rdf_has(File, cpack:resolves, FileRef),
 	rdf_has(UsedBy, cpack:usesFile, FileRef),
 	rdf_has(UsedBy, cpack:inPack, Pack).
+
+
+%%	cpack_requires(+Package, -Required, -Why) is nondet.
+%
+%	True when Package requires Required.
+
+cpack_requires(Package, Required, token) :-
+	cpack_requires_by_token(Package, Required).
+cpack_requires(Package, Required, file) :-
+	cpack_requires_by_file(Package, Required).
+
+cpack_requires_by_token(Package, Required) :-
+	rdf_has(Package, cpack:requires, Token),
+	rdf_has(Required, cpack:provides, Token).
+
+cpack_requires_by_file(Package, Required) :-
+	rdf_has(File, cpack:inPack, Package),
+	rdf_has(File, cpack:usesFile, FileRef),
+	rdf_has(ReqFile, cpack:resolves, FileRef),
+	rdf_has(ReqFile, cpack:inPack, Required),
+	Required \== Package.
