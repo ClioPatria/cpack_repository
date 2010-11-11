@@ -235,14 +235,20 @@ read_files(end_of_file, _, _) :- !.
 read_files(Line, Graph, In) :-
 	atom_codes(FileName, Line),
 	file_base_name(FileName, BaseName),
+	file_base(FileName , BaseID),
 	file_type(BaseName, Class),
 	atomic_list_concat([Graph, /, FileName], File),
 	rdf_assert(File, cpack:path, literal(FileName), Graph),
 	rdf_assert(File, cpack:name, literal(BaseName), Graph),
+	rdf_assert(File, cpack:base, literal(BaseID), Graph),
 	rdf_assert(File, cpack:inPack, Graph, Graph),
 	rdf_assert(File, rdf:type, Class, Graph),
 	read_line_to_codes(In, Line2),
 	read_files(Line2, Graph, In).
+
+file_base(Path, Base) :-
+	file_base_name(Path, File),
+	file_name_extension(Base, _Ext, File).
 
 
 :- rdf_meta

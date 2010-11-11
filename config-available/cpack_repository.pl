@@ -30,3 +30,5 @@ cliopatria:menu_item(275=current_user/cpack_my_packages, 'My CPACKs') :-
 
 :- rdf_set_predicate(cpack:submitted,   inverse_of(cpack:submittedBy)).
 :- rdf_set_predicate(cpack:submittedBy, inverse_of(cpack:submitted)).
+:- rdf_set_predicate(cpack:resolves,    inverse_of(cpack:resolvesAs)).
+:- rdf_set_predicate(cpack:resolvesAs,  inverse_of(cpack:resolves)).

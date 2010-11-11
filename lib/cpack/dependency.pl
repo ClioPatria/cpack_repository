@@ -32,6 +32,7 @@
 	  [ xref_cpack/1,
 	    xref_cpack_file/1
 	  ]).
+:- use_module(library(apply)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(git)).
@@ -52,8 +53,8 @@ analyse the package dependencies.
 
 xref_cpack(Pack) :-
 	findall(File, pack_prolog_file(Pack, File), Files),
-	forall(member(File, Files),
-	       xref_cpack_file(File)).
+	maplist(xref_cpack_file, Files),
+	maplist(resolve_file, Files).
 
 pack_prolog_file(Pack, File) :-
 	rdf_has(File, cpack:inPack, Pack),
@@ -183,7 +184,7 @@ search_file(Spec, File) :-
 	;   user:prolog_file_type(Ext, prolog),
 	    file_name_extension(InPack, Ext, Target)
 	),
-	rdf_has(File, cpack:path, literal(Target)).
+	once(rdf_has(File, cpack:path, literal(Target))).
 
 path_rule(Alias, NewAlias) :-
 	Alias =.. [Name,Local],
@@ -196,15 +197,63 @@ path_rule(Alias, NewAlias) :-
 		 *	 FILE REFERENCES	*
 		 *******************************/
 
+%%	file_ref(+Spec, -URI) is det.
+%
+%	True when URI is the URI for  a FileRef instance that represents
+%	the symbolic file-reference Spec.
+
 file_ref(Spec, URI) :-
 	format(atom(Id), '~q', [Spec]),
 	cpack_uri(file_ref, Id, URI),
 	(   rdf(URI, rdf:type, cpack:'FileRef')
 	->  true
 	;   cpack_uri(graph, 'file-references', Graph),
+	    file_base(Spec, BaseName),
 	    rdf_assert(URI, rdf:type, cpack:'FileRef', Graph),
-	    rdf_assert(URI, cpack:name, literal(Id), Graph)
+	    rdf_assert(URI, cpack:name, literal(Id), Graph),
+	    rdf_assert(URI, cpack:base, literal(BaseName), Graph),
+	    resolve_file_ref(URI)
 	).
+
+file_base(Spec, Base) :-
+	atom(Spec), !,
+	file_base_name(Spec, File),
+	file_name_extension(Base, _Ext, File). % demand Prolog?
+file_base(Spec, Base) :-
+	arg(1, Spec, Name),
+	file_base(Name, Base).
+
+%%	resolve_file(+File) is det.
+%
+%	Create links to the  FileRef  objects   to  which  this file may
+%	resolve.
+
+resolve_file(File) :-
+	rdf_has(File, cpack:base, Base),
+	findall(FileRef,
+		(   rdf_has(FileRef, cpack:base, Base),
+		    rdfs_individual_of(FileRef, cpack:'FileRef')
+		),
+		Candidates),
+	maplist(resolve_file_ref, Candidates).
+
+
+%%	resolve_file_ref(+FileRef) is det.
+%
+%	File files to which FileRef can resolve  and add relate the file
+%	to this FileRef.
+
+resolve_file_ref(FileRef) :-
+	rdf_has(FileRef, cpack:name, literal(Id)),
+	atom_to_term(Id, Spec, _Vars),
+	forall(search_file(Spec, File),
+	       assert_resolves(File, FileRef)).
+
+assert_resolves(File, FileRef) :-
+	rdf_has(File, cpack:resolves, FileRef), !.
+assert_resolves(File, FileRef) :-
+	rdf_has(File, cpack:inPack, Pack),
+	rdf_assert(File, cpack:resolves, FileRef, Pack).
 
 
 		 /*******************************
