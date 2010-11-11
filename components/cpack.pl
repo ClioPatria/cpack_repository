@@ -41,6 +41,7 @@
 :- use_module(library(semweb/rdf_label)).
 :- use_module(components(label)).
 :- use_module(cliopatria(hooks)).
+:- use_module(cpack/graphs).
 
 /** <module> CPACK HTML components
 
@@ -63,6 +64,11 @@ cliopatria:list_resource(Pack) -->
 cliopatria:list_resource(Pack) -->
 	{ rdfs_individual_of(Pack, cpack:'File') },
 	cpack_file(Pack, []).
+
+
+		 /*******************************
+		 *	      PACKAGE		*
+		 *******************************/
 
 %%	cpack(+Pack, +Options)// is det.
 %
@@ -90,7 +96,8 @@ cpack(Pack, _Options) -->
 		   h3('Recent changes'),
 		   \git_shortlog(Pack, [limit(5)]),
 		   h3('Files in package'),
-		   \files_in_pack(Pack)
+		   \files_in_pack(Pack),
+		   \cpack_dependency_graph(Pack, [])
 		 ])).
 
 
@@ -124,6 +131,10 @@ files_in_pack(Pack) -->
 	{ findall(File, rdf_has(File, cpack:inPack, Pack), Files) },
 	list_ul(Files, [class(files), predicate(cpack:path)]).
 
+
+		 /*******************************
+		 *	      FILE		*
+		 *******************************/
 
 %%	cpack_file(+FileURL, +Options)// is det.
 %
@@ -347,3 +358,18 @@ cpack_link(R, _) -->
 cpack_label_property(cpack:name).
 cpack_label_property(foaf:name).
 cpack_label_property(rdfs:label).
+
+
+		 /*******************************
+		 *	       LABELS		*
+		 *******************************/
+
+%%	rdf_label:display_label_hook(+Pack, ?Lang, -Label) is semidet.
+%
+%	Provide the label  of  a   package  using  the cpack:packageName
+%	property.
+
+rdf_label:display_label_hook(R, _, Label) :-
+	rdfs_individual_of(R, cpack:'Package'),
+	rdf_has(R, cpack:packageName, Literal),
+	literal_text(Literal, Label).

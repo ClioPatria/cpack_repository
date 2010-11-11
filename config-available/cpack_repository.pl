@@ -25,6 +25,7 @@ cliopatria:menu_item(275=current_user/cpack_my_packages, 'My CPACKs') :-
 :- rdf_load_library(cpack).
 :- rdf_load_library(owl).
 :- rdf_load_library(dcterms).
+:- rdf_load_library(graphviz).
 
 % Hack, make submittedBy work for rdf_has/3.
 
