@@ -145,7 +145,7 @@ cpack_file(FileURL, _Options) -->
 	},
 	html_requires(css('cpack.css')),
 	html(div(class(cpack),
-		 [ h2(['File "', Path, '"']),
+		 [ h2(['File "', Path, '"', \download(FileURL)]),
 		   table(class(infobox),
 			 [ \p_row(FileURL, cpack:inPack),
 			   \p_row(FileURL, cpack:module)
@@ -153,6 +153,12 @@ cpack_file(FileURL, _Options) -->
 		   br(clear(all)),
 		   \prolog_file(FileURL)
 		 ])).
+
+download(FileURL) -->
+	{ http_link_to_id(cpack_show_file, [r(FileURL)], HREF)
+	},
+	html(a([href(HREF), style('float:right')], '[download]')).
+
 
 prolog_file(FileURL) -->
 	{ rdfs_individual_of(FileURL, cpack:'PrologFile') }, !,

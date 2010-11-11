@@ -32,6 +32,7 @@
 :- include(bundle(html_page)).
 :- use_module(library(apply)).
 :- use_module(library(lists)).
+:- use_module(library(git)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(semweb/rdf_label)).
@@ -49,6 +50,7 @@ http:location(cpack_api,  api(cpack),  []).
 :- http_handler(cpack(my_packages),	   cpack_my_packages,	     []).
 :- http_handler(cpack(update_my_packages), cpack_update_my_packages, []).
 :- http_handler(cpack_api(submit),	   cpack_submit,	     []).
+:- http_handler(cpack(show_file),	   cpack_show_file,	     []).
 
 /** <module> User interaction to manage CPACKS
 */
@@ -177,3 +179,24 @@ cpack_update_my_packages(_Request) :-
 	       authorized(write(cpack, Package))),
 	call_showing_messages(maplist(cpack_update_package(UserURI), Packages),
 			      []).
+
+%%	cpack_show_file(File) is det.
+%
+%	Show the content of File.
+
+cpack_show_file(Request) :-
+	http_parameters(Request,
+			[ r(File,
+			    [ description('URI of a file in a package')
+			    ])
+			]),
+	rdf_has(File, cpack:inPack, Package),
+	rdf_has(File, cpack:path, literal(Path)),
+	cpack_our_mirror(Package, BareGitDir),
+	rdf_has(Package, cpack:mirrorRepository, Mirror),
+	rdf_has(Mirror, cpack:hash, literal(Hash)),
+	setup_call_cleanup(git_open_file(BareGitDir, Path, Hash, In),
+			   (   format('Content-type: text/plain~n~n'),
+			       copy_stream_data(In, current_output)
+			   ),
+			   close(In)).

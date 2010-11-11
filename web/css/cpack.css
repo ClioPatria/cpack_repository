@@ -45,3 +45,10 @@ ul.files
 ul.files li
 { font-family: Monospace;
 }
+
+div.cpack h2 a
+{ margin-top: 0.4em;
+  font-size: 60%;
+  font-style: italic;
+  font-weight: normal;
+}
