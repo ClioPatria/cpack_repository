@@ -94,7 +94,8 @@ file_property(File, UsesFile, Uses) :-
 	format(atom(Atom), '~q', Spec),
 	(   rdf_is_resource(Path),
 	    rdfs_individual_of(Path, cpack:'File')
-	->  Uses = Path
+	->  rdf_equal(UsesFile, cpack:usesPackageFile),
+	    Uses = Path
 	;   Uses = literal(Atom),
 	    (   Path == '<not_found>'
 	    ->  rdf_equal(UsesFile, cpack:usesPackageFile)
