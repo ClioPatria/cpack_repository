@@ -35,6 +35,7 @@
 	  ]).
 :- include(bundle(html_page)).
 :- use_module(library(cpack/repository)).
+:- use_module(library(cpack/dependency)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(semweb/rdf_label)).
@@ -203,11 +204,6 @@ used_by(File) -->
 	       \list(Pairs, file_in_package, ul)
 	     ]).
 used_by(_) --> [].
-
-file_used_by_file_in_package(File, UsedBy, Pack) :-
-	rdf_has(File, cpack:resolves, FileRef),
-	rdf_has(UsedBy, cpack:usesFile, FileRef),
-	rdf_has(UsedBy, cpack:inPack, Pack).
 
 file_in_package(File-Pack) -->
 	html([ \cpack_link(File, cpack:path),

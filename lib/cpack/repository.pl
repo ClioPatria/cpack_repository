@@ -46,7 +46,7 @@
 :- use_module(library(filesex)).
 :- use_module(library(http/http_wrapper)).
 :- use_module(library(http/http_host)).
-:- use_module(dependency).
+:- use_module(xref).
 
 /** <module> Manage CPACK repositories
 
