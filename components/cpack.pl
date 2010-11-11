@@ -124,9 +124,9 @@ files_in_pack(Pack) -->
 	list_ul(Files, [class(files), predicate(cpack:path)]).
 
 
-%%	cpack_file(+FileURL, Options)// is det.
+%%	cpack_file(+FileURL, +Options)// is det.
 %
-%	Show info about the file FileURL
+%	Show local view for the file FileURL
 
 cpack_file(FileURL, _Options) -->
 	{ rdf_has(FileURL, cpack:path, literal(Path))
@@ -145,6 +145,7 @@ cpack_file(FileURL, _Options) -->
 prolog_file(FileURL) -->
 	{ rdfs_individual_of(FileURL, cpack:'PrologFile') }, !,
 	html([ \imports(FileURL),
+	       \used_by(FileURL),
 	       \exported_predicates(FileURL),
 	       \required_predicates(FileURL)
 	     ]).
@@ -152,10 +153,12 @@ prolog_file(_) --> [].
 
 
 exported_predicates(FileURL) -->
-	{ findall(PI, rdf_has(FileURL, cpack:exportsPredicate, PI), List)
-	},
+	{ findall(PI, rdf_has(FileURL, cpack:exportsPredicate, PI), List),
+	  List \== []
+	}, !,
 	html(h3('Exported predicates')),
 	list_ul(List, []).
+exported_predicates(_) --> [].
 
 required_predicates(FileURL) -->
 	{ findall(PI, rdf_has(FileURL, cpack:requiresPredicate, PI), List)
@@ -184,6 +187,33 @@ imports(File, Label, P0) -->
 	},
 	html(Label),
 	list_ul(Imports, []).
+
+%%	used_by(+File)// is det.
+%
+%	Indicates which other files in  which   package  depend  on this
+%	file.
+
+used_by(File) -->
+	{ findall(By-Pack,
+		  file_used_by_file_in_package(File, By, Pack),
+		  Pairs),
+	  Pairs \== []
+	}, !,
+	html([ h3('This file is used by'),
+	       \list(Pairs, file_in_package, ul)
+	     ]).
+used_by(_) --> [].
+
+file_used_by_file_in_package(File, UsedBy, Pack) :-
+	rdf_has(File, cpack:resolves, FileRef),
+	rdf_has(UsedBy, cpack:usesFile, FileRef),
+	rdf_has(UsedBy, cpack:inPack, Pack).
+
+file_in_package(File-Pack) -->
+	html([ \cpack_link(File, cpack:path),
+	       ' from package ',
+	       \cpack_link(Pack)
+	     ]).
 
 
 		 /*******************************
@@ -228,6 +258,37 @@ list_li([], _) --> [].
 list_li([H|T], P) -->
 	html(li(\cpack_link(H, P))),
 	list_li(T, P).
+
+
+%%	list(+List, :Goal, +Type)// is det.
+%
+%	Create an HTML list from the elements   of  List. Each member of
+%	List is _typeset_ in  an  =li=   element  by  calling call(Goal,
+%	Member). Type is one of =ul= or   =ol=, optionally with an extra
+%	argument that provides attributes for the list.   For example:
+%
+%	  ==
+%	  	list(List, make_item, ul(class(mylist))),
+%	  	...
+%
+%	  make_item(Name, Mail) -->
+%	  	html([Name, ' <mailto:', Mail, '>']).
+%	  ==
+
+:- meta_predicate
+	list(+,3,+,?,?).
+
+list(List, Goal, Type) -->
+	{ Type =.. L,
+	  append(L, [\list_item(List, Goal)], L1),
+	  Term =.. L1
+	},
+	html(Term).
+
+list_item([], _) --> [].
+list_item([H|T], Goal) -->
+	html(li(\call(Goal, H))),
+	list_item(T, Goal).
 
 
 %%	cpack_prop(+Resource, +Property)
