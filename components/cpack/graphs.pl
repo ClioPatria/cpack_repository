@@ -35,6 +35,7 @@
 :- use_module(library(lists)).
 :- use_module(components(graphviz)).
 :- use_module(library(cpack/dependency)).
+:- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_abstract)).
 :- use_module(components(label)).
 
