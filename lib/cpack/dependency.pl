@@ -36,9 +36,13 @@
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(git)).
 :- use_module(library(prolog_xref)).
+:- use_module(library(prolog_source)).
 :- use_module(repository).
 
 /** <module> Compute dependencies between CPACKs
+
+This module runs the Prolog  cross-referencer   on  a  submitted pack to
+analyse the package dependencies.
 
 */
 
@@ -88,6 +92,11 @@ assert_objects([O|T], S, P, G) :-
 %
 %	True when rdf(File,P,O) describes a property   of  File. Used to
 %	generate all properties from the cross-referencer output.
+%
+%	@tbd	We can compute other dependencies (referenced RDF
+%		namespaces, used HTML resources, etc.)
+%	@tbd	We can also compute possible dangerous code.  See
+%		safecode as developed as part of SWAPP.
 
 file_property(File, cpack:module, literal(Module)) :-
 	xref_module(File, Module).
@@ -100,12 +109,11 @@ file_property(File, cpack:requiresPredicate, literal(Pred)) :-
 	head_atom(Callable, Pred).
 file_property(File, UsesFile, Uses) :-
 	xref_uses_file(File, Spec, Path),
-	format(atom(Atom), '~q', Spec),
 	(   rdf_is_resource(Path),
 	    rdfs_individual_of(Path, cpack:'File')
 	->  rdf_equal(UsesFile, cpack:usesPackageFile),
 	    Uses = Path
-	;   Uses = literal(Atom),
+	;   file_ref(Spec, Uses),
 	    (   Path == '<not_found>'
 	    ->  rdf_equal(UsesFile, cpack:usesPackageFile)
 	    ;   system_file(Path)
@@ -115,6 +123,7 @@ file_property(File, UsesFile, Uses) :-
 	    ;   rdf_equal(UsesFile, cpack:usesPackageFile)
 	    )
 	).
+
 
 head_atom(Head, Atom) :-
 	head_pi(Head, PI),
@@ -152,6 +161,50 @@ loaded_package_file(Path) :-
 	setting(cpack:package_directory, PackageDir),
 	absolute_file_name(PackageDir, PackageRoot),
 	sub_atom(Path, 0, _, _, PackageRoot).
+
+
+		 /*******************************
+		 *	   FIND FILES		*
+		 *******************************/
+
+%%	search_file(+Spec, -File:uri) is nondet.
+%
+%	True when File is a candidate   for resolving the given symbolic
+%	path Spec. The trick is that  the   path  =cpacks= refers to all
+%	packs in our database, so we   need to rewrite our specification
+%	as cpacks(Path).  I.e.,
+%
+%		library(X) --> cpacks(lib/X)
+
+search_file(Spec, File) :-
+	path_rule(Spec, cpacks(Segments)),
+	path_segments_atom(Segments, InPack),
+	(   Target = InPack
+	;   user:prolog_file_type(Ext, prolog),
+	    file_name_extension(InPack, Ext, Target)
+	),
+	rdf_has(File, cpack:path, literal(Target)).
+
+path_rule(Alias, NewAlias) :-
+	Alias =.. [Name,Local],
+	user:file_search_path(Name, Exp),
+	Exp =.. [NewName,Parent],
+	NewAlias =.. [NewName,Parent/Local].
+
+
+		 /*******************************
+		 *	 FILE REFERENCES	*
+		 *******************************/
+
+file_ref(Spec, URI) :-
+	format(atom(Id), '~q', [Spec]),
+	cpack_uri(file_ref, Id, URI),
+	(   rdf(URI, rdf:type, cpack:'FileRef')
+	->  true
+	;   cpack_uri(graph, 'file-references', Graph),
+	    rdf_assert(URI, rdf:type, cpack:'FileRef', Graph),
+	    rdf_assert(URI, cpack:name, literal(Id), Graph)
+	).
 
 
 		 /*******************************

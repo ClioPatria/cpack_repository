@@ -115,7 +115,7 @@ cpack_list_packages(_Request) :-
 	list_packages([]).
 
 cpack_my_packages(_Request) :-
-	logged_on(User),
+	ensure_logged_on(User),
 	user_property(User, url(UserURI)),
 	list_packages([user(UserURI), update_all_link(true)]).
 

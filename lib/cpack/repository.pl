@@ -33,6 +33,7 @@
 	    cpack_update_package/2,	% +User, +Package
 	    cpack_our_mirror/2,		% +Package, -MirrorDir
 	    cpack_shortlog/3,		% +Package, -ShortLog, +Options
+	    cpack_uri/3,		% +Type, +Object, -URI
 	    git_log_data/3		% ?Field, ?Record, ?Data
 	  ]).
 :- use_module(library(lists)).
@@ -276,14 +277,29 @@ rdf_load_git_stream(Graph, Format, In) :-
 	forall(member(rdf(S,P,O), RDF),
 	       rdf_assert(S,P,O,Graph)).
 
-package_graph(Package, Graph) :-
+%%	cpack_uri(+Type, +Identifier, -URI) is det.
+%
+%	Create a persistent URI for Identifier of the given Type.
+
+cpack_uri(Type, Name, URI) :-
+	(   type_root(Type, Root)
+	->  true
+	;   domain_error(uri_type, Type)
+	),
 	http_current_request(Request),
 	http_current_host(Request, Host, Port,
 			  [ global(true)
 			  ]),
-	format(atom(Graph), 'http://~w:~w/cpack/~w',
-	       [ Host, Port, Package ]).
+	format(atom(URI), 'http://~w:~w/cpack/~w~w',
+	       [ Host, Port, Root, Name ]).
 
+type_root(package,  'packs/').
+type_root(file_ref, 'file_ref/').
+type_root(graph,    'graph/').
+
+
+package_graph(Package, Graph) :-
+	cpack_uri(package, Package, Graph).
 
 url_package(URL, Package) :-
 	file_base_name(URL, Base),
