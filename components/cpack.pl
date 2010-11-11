@@ -41,7 +41,7 @@
 :- use_module(library(semweb/rdf_label)).
 :- use_module(components(label)).
 :- use_module(cliopatria(hooks)).
-:- use_module(cpack/graphs).
+:- use_module('cpack/graphs').
 
 /** <module> CPACK HTML components
 
@@ -93,7 +93,6 @@ cpack(Pack, _Options) -->
 		   div(class(description),
 		       \cpack_prop(Pack, cpack:description)),
 		   br(clear(all)),
-		   h3('Recent changes'),
 		   \git_shortlog(Pack, [limit(5)]),
 		   h3('Files in package'),
 		   \files_in_pack(Pack),
@@ -103,8 +102,10 @@ cpack(Pack, _Options) -->
 
 git_shortlog(Pack, Options) -->
 	{ cpack_shortlog(Pack, ShortLog, Options) },
-	html(table(class(git_shortlog),
-		   \shortlog_rows(ShortLog, 1))).
+	html([ h3('Recent changes'),
+	       table(class(git_shortlog),
+		     \shortlog_rows(ShortLog, 1))
+	     ]).
 
 shortlog_rows([], _) --> [].
 shortlog_rows([H|T], Row) -->
@@ -141,7 +142,8 @@ files_in_pack(Pack) -->
 %	Show local view for the file FileURL
 
 cpack_file(FileURL, _Options) -->
-	{ rdf_has(FileURL, cpack:path, literal(Path))
+	{ rdf_has(FileURL, cpack:path, literal(Path)),
+	  rdf_has(FileURL, cpack:inPack, Pack)
 	},
 	html_requires(css('cpack.css')),
 	html(div(class(cpack),
@@ -151,6 +153,7 @@ cpack_file(FileURL, _Options) -->
 			   \p_row(FileURL, cpack:module)
 			 ]),
 		   br(clear(all)),
+		   \git_shortlog(Pack, [limit(5), path(Path)]),
 		   \prolog_file(FileURL)
 		 ])).
 

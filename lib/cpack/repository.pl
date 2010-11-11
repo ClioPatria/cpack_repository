@@ -330,7 +330,13 @@ cpack_our_mirror(Pack, BareGitPath) :-
 
 %%	cpack_shortlog(+Pack, -ShortLog, Options) is det.
 %
-%	Fetch information like the GitWeb change overview.
+%	Fetch information like the  GitWeb   change  overview. Processed
+%	options:
+%
+%	    * limit(+Count)
+%	    Maximum number of commits to show (default is 10)
+%	    * path(+Path)
+%	    Only show commits that affect Path
 %
 %	@param ShortLog is a list of =git_log= records.
 
@@ -343,9 +349,15 @@ cpack_our_mirror(Pack, BareGitPath) :-
 
 cpack_shortlog(Pack, ShortLog, Options) :-
 	option(limit(Limit), Options, 10),
+	(   option(path(Path), Options)
+	->  Extra = ['--', Path]
+	;   Extra = []
+	),
 	cpack_our_mirror(Pack, BareGitPath),
-	git_process_output([log, '-n', Limit,
-			    '--format=%H%x00%cr%x00%cn%x00%s%x00%d%x00'],
+	git_process_output([ log, '-n', Limit,
+			     '--format=%H%x00%cr%x00%cn%x00%s%x00%d%x00'
+			   | Extra
+			   ],
 			   read_shortlog(ShortLog),
 			   [directory(BareGitPath)]).
 
