@@ -4,6 +4,8 @@
 :- use_module(library(http/http_path)).
 :- use_module(user(user_db)).
 :- use_module(cliopatria(hooks)).
+:- use_module(library(semweb/rdf_db)).
+:- use_module(library(semweb/rdf_library)).
 
 /** <module> CPACK repository interface
 */
@@ -17,3 +19,14 @@ cliopatria:menu_item(100=cpack/cpack_list_packages, 'List packs').
 cliopatria:menu_item(200=cpack/cpack_submit_form,   'Submit pack').
 cliopatria:menu_item(275=current_user/cpack_my_packages, 'My CPACKs') :-
 	logged_on(_).
+
+:- rdf_attach_library(cliopatria(rdf/tool)).
+:- rdf_attach_library(cliopatria(rdf/base)).
+:- rdf_load_library(cpack).
+:- rdf_load_library(owl).
+:- rdf_load_library(dcterms).
+
+% Hack, make submittedBy work for rdf_has/3.
+
+:- rdf_set_predicate(cpack:submitted,   inverse_of(cpack:submittedBy)).
+:- rdf_set_predicate(cpack:submittedBy, inverse_of(cpack:submitted)).

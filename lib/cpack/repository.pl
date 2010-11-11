@@ -124,7 +124,7 @@ cpack_update_repository(User, URL, Options) :-
 update_allowed(_, _, Options) :-
 	option(allowed(true), Options), !.
 update_allowed(User, Package, _) :-
-	rdf_has(Package, cpack:submittedBy, User, Package), !.
+	rdf_has(User, cpack:submitted, Package, User), !.
 update_allowed(_, Package, _) :-
 	permission_error(update, cpack, Package).
 
@@ -140,7 +140,7 @@ update_metadata(BareGitPath, Graph, Options) :-
 	update_decription(BareGitPath, Graph),
 	add_timestamp(Graph),
 	(   option(user(User), Options)
-	->  rdf_assert(Graph, cpack:submittedBy, User, Graph)
+	->  rdf_assert(User, cpack:submitted, Graph, User)
 	;   true
 	),
 	(   option(cloned(ClonedURL), Options)
