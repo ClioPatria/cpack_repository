@@ -89,8 +89,7 @@ cpack(Pack, _Options) -->
 		   h3('Recent changes'),
 		   \git_shortlog(Pack, [limit(5)]),
 		   h3('Files in package'),
-		   ul(class(files),
-		      \files_in_pack(Pack))
+		   \files_in_pack(Pack)
 		 ])).
 
 
@@ -122,12 +121,7 @@ td_git_log(Field, Record) -->
 
 files_in_pack(Pack) -->
 	{ findall(File, rdf_has(File, cpack:inPack, Pack), Files) },
-	list_li(Files).
-
-list_li([]) --> [].
-list_li([H|T]) -->
-	html(li(\cpack_link(H, cpack:path))),
-	list_li(T).
+	list_ul(Files, [class(files), predicate(cpack:path)]).
 
 
 %%	cpack_file(+FileURL, Options)// is det.
@@ -150,22 +144,46 @@ cpack_file(FileURL, _Options) -->
 
 prolog_file(FileURL) -->
 	{ rdfs_individual_of(FileURL, cpack:'PrologFile') }, !,
-	html([ h3('Exported predicates'),
-	       ul(class(exports),
-		  \exported_predicates(FileURL))
+	html([ \imports(FileURL),
+	       \exported_predicates(FileURL),
+	       \required_predicates(FileURL)
 	     ]).
 prolog_file(_) --> [].
 
 
 exported_predicates(FileURL) -->
-	{ findall(PI, rdf_has(FileURL, cpack:exportsPredicate, literal(PI)), List)
+	{ findall(PI, rdf_has(FileURL, cpack:exportsPredicate, PI), List)
 	},
-	atoms_li(List).
+	html(h3('Exported predicates')),
+	list_ul(List, []).
 
-atoms_li([]) --> [].
-atoms_li([H|T]) -->
-	html(li(H)),
-	atoms_li(T).
+required_predicates(FileURL) -->
+	{ findall(PI, rdf_has(FileURL, cpack:requiresPredicate, PI), List)
+	},
+	html(h3('Required predicates')),
+	list_ul(List, []).
+
+%%	imports(+File)// is det.
+%
+%	Show required dependencies of this file.
+
+imports(File) -->
+	html([ h3('Imported files'),
+	       ul([ li(\imports(File, 'From packages',
+				cpack:usesPackageFile)),
+		    li(\imports(File, 'From ClioPatria',
+				cpack:usesClioPatriaFile)),
+		    li(\imports(File, 'From Prolog',
+				cpack:usesSystemFile))
+		  ])
+	     ]).
+
+imports(File, Label, P0) -->
+	{ rdf_global_id(P0, P),
+	  findall(I, rdf_has(File, P, I), Imports)
+	},
+	html(Label),
+	list_ul(Imports, []).
 
 
 		 /*******************************
@@ -183,6 +201,33 @@ p_row(R, P0) -->
 	}, !,
 	html(tr([th([Label, :]), td(\cpack_prop(R, P))])).
 p_row(_, _) --> [].
+
+
+%%	list_ul(+ItemList, +Options)
+%
+%	Create an =ul= list from the items in ItemList.  Options are
+%	passed as attributes to the =ul= element, except for:
+%
+%	  * predicate(P)
+%	  Use the predicate P as preferenced prediate to generate a
+%	  label.
+%
+%	@tbd: Allow for sorting
+
+list_ul(List, Options) -->
+	{ (   select_option(predicate(P0), Options, Rest)
+	  ->  rdf_global_id(P0, P)
+	  ;   P = (-),
+	      Rest = Options
+	  )
+	},
+	html(ul(Rest,
+		\list_li(List, P))).
+
+list_li([], _) --> [].
+list_li([H|T], P) -->
+	html(li(\cpack_link(H, P))),
+	list_li(T, P).
 
 
 %%	cpack_prop(+Resource, +Property)
@@ -234,6 +279,11 @@ cpack_link(R, P0) -->
 	  resource_link(R, HREF)
 	},
 	html(a(href(HREF), Text)).
+cpack_link(L, _) -->
+	{ rdf_is_literal(L), !,
+	  literal_text(L, Text)
+	},
+	html(Text).
 cpack_link(R, _) -->
 	rdf_link(R).
 

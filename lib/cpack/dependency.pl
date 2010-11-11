@@ -75,8 +75,14 @@ xref_cpack_file(File) :-
 
 xref_to_rdf(File) :-
 	rdf_has(File, cpack:inPack, Graph),
-	forall(file_property(File, P, O),
-	       rdf_assert(File, P, O, Graph)).
+	forall(setof(O, file_property(File, P, O), OL),
+	       assert_objects(OL, File, P, Graph)).
+
+assert_objects([], _, _, _).
+assert_objects([O|T], S, P, G) :-
+	rdf_assert(S,P,O,G),
+	assert_objects(T, S, P, G).
+
 
 %%	file_property(+File, ?P, ?O) is nondet.
 %
@@ -87,8 +93,11 @@ file_property(File, cpack:module, literal(Module)) :-
 	xref_module(File, Module).
 file_property(File, cpack:exportsPredicate, literal(Pred)) :-
 	xref_exported(File, Callable),
-	functor(Callable, Name, Arity),
-	format(atom(Pred), '~w/~w', [Name, Arity]).
+	head_atom(Callable, Pred).
+file_property(File, cpack:requiresPredicate, literal(Pred)) :-
+	xref_called(File, Callable, _),
+	\+ xref_local_defined(File, Callable),
+	head_atom(Callable, Pred).
 file_property(File, UsesFile, Uses) :-
 	xref_uses_file(File, Spec, Path),
 	format(atom(Atom), '~q', Spec),
@@ -106,6 +115,19 @@ file_property(File, UsesFile, Uses) :-
 	    ;   rdf_equal(UsesFile, cpack:usesPackageFile)
 	    )
 	).
+
+head_atom(Head, Atom) :-
+	head_pi(Head, PI),
+	format(atom(Atom), '~q', [PI]).
+
+head_pi(M:Term, M:PI) :- !,
+	head_pi(Term, PI).
+head_pi(Term, Name/Arity) :-
+	functor(Term, Name, Arity).
+
+xref_local_defined(Src, Callable) :-
+	xref_defined(Src, Callable, How),
+	How \= imported(_From).
 
 
 %%	system_file(+Path) is semidet.
