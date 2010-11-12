@@ -33,6 +33,7 @@
 	  ]).
 :- include(bundle(html_page)).
 :- use_module(library(lists)).
+:- use_module(library(count)).
 :- use_module(components(graphviz)).
 :- use_module(library(cpack/dependency)).
 :- use_module(library(semweb/rdf_db)).
@@ -69,7 +70,7 @@ shape(Start, Start,
 %	Triples is a graph that describes the dependencies of a package.
 
 dependency_graph(URI, RDF) :-
-	findall(T, dependency_triple(URI, T), RDF0),
+	bf_graph(URI, 2, 100, 20, RDF0),
 	sort(RDF0, RDF1),
 	minimise_graph(RDF1, RDF2),		% remove inverse/symmetric/...
 	(   length(RDF2, Len2),
@@ -79,6 +80,37 @@ dependency_graph(URI, RDF) :-
 	),
 	append(RDF3, Bags, RDF).
 
-dependency_triple(_, rdf(Pack1, P, Pack2)) :-
+%%	bf_graph(+Start, +MaxDist, +MaxEdges, +MaxBranch, -Graph)
+
+bf_graph(Start, MaxDist, MaxEdges, MaxBranch, Graph) :-
+	bf_graph_2([0-Start], MaxDist, MaxEdges, MaxBranch, [], Graph).
+
+bf_graph_2([], _, _, _, G, G) :- !.
+bf_graph_2([D-_|_], MaxDist, _, _, G, G) :-
+	D >= MaxDist, !.
+bf_graph_2(AG0, MaxDist, MaxEdges, MaxBranch, G0, G) :-
+	bf_expand(AG0, AG, MaxBranch, G1),
+	(   G1 == []
+	->  bf_graph_2(AG, MaxDist, MaxEdges, MaxBranch, G0, G)
+	;   append(G1, G0, G2),
+	    sort(G2, G3),
+	    length(G3, Edges),
+	    (   Edges >= MaxEdges
+	    ->  G = G0
+	    ;   bf_graph_2(AG, MaxDist, MaxEdges, MaxBranch, G3, G)
+	    )
+	).
+
+bf_expand([D-F|AG0], AG, MaxBranch, Triples) :-
+	D1 is D + 1,
+	Key = D1-Dst,
+	answer_set(Key-Triple, related(F, Dst, Triple), MaxBranch, Pairs),
+	pairs_keys_values(Pairs, Dsts, Triples),
+	append(AG0, Dsts, AG).
+
+related(S, O, rdf(S,P,O)) :-
 	rdf_equal(cpack:requiresPackage, P),
-	cpack_requires(Pack1, Pack2, _Why).
+	cpack_requires(S, O, _Why).
+related(O, S, rdf(S,P,O)) :-
+	rdf_equal(cpack:requiresPackage, P),
+	cpack_requires(S, O, _Why).
