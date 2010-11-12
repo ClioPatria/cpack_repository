@@ -105,18 +105,22 @@ git_shortlog(Pack, Options) -->
 	{ cpack_shortlog(Pack, ShortLog, Options) },
 	html([ h3('Recent changes'),
 	       table(class(git_shortlog),
-		     \shortlog_rows(ShortLog, 1))
+		     \shortlog_rows(ShortLog, Pack, 1))
 	     ]).
 
-shortlog_rows([], _) --> [].
-shortlog_rows([H|T], Row) -->
-	odd_even_row(Row, Next, \shortlog_row(H)),
-	shortlog_rows(T, Next).
+shortlog_rows([], _, _) --> [].
+shortlog_rows([H|T], Pack, Row) -->
+	odd_even_row(Row, Next, \shortlog_row(H, Pack)),
+	shortlog_rows(T, Pack, Next).
 
-shortlog_row(Record) -->
+shortlog_row(Record, Pack) -->
+	{ git_log_data(hash, Record, Commit),
+	  http_link_to_id(git_show, [a(commit),h(Commit),r(Pack)], HREF)
+	},
 	html([ \td_git_log(date, Record),
 	       \td_git_log(committer, Record),
-	       \td_git_log(title, Record)
+	       \td_git_log(title, Record),
+	       td(a(href(HREF), commit))
 	     ]).
 
 td_git_log(Field, Record) -->

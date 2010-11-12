@@ -51,6 +51,7 @@ http:location(cpack_api,  api(cpack),  []).
 :- http_handler(cpack(update_my_packages), cpack_update_my_packages, []).
 :- http_handler(cpack_api(submit),	   cpack_submit,	     []).
 :- http_handler(cpack(show_file),	   cpack_show_file,	     []).
+:- http_handler(cpack(git_show),	   git_show,	             []).
 
 /** <module> User interaction to manage CPACKS
 */
@@ -180,7 +181,7 @@ cpack_update_my_packages(_Request) :-
 	call_showing_messages(maplist(cpack_update_package(UserURI), Packages),
 			      []).
 
-%%	cpack_show_file(File) is det.
+%%	cpack_show_file(+Request) is det.
 %
 %	Show the content of File.
 
@@ -200,3 +201,22 @@ cpack_show_file(Request) :-
 			       copy_stream_data(In, current_output)
 			   ),
 			   close(In)).
+
+%%	git_show(+Request) is det.
+%
+%	HTTP handler to handle GIT requests.
+
+git_show(Request) :-
+	http_parameters(Request,
+			[ a(_Action,
+			    [ oneof([commit]),
+			      description('Action to perform')
+			    ]),
+			  h(_Hash,
+			    [ description('Hash to work on')
+			    ]),
+			  r(_Project,
+			    [ description('URI of the project')
+			    ])
+			]),
+	true.
