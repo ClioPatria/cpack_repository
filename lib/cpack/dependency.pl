@@ -62,7 +62,11 @@ cpack_requires(Package, Required, file) :-
 	cpack_requires_by_file(Package, Required).
 
 cpack_requires_by_token(Package, Required) :-
-	rdf_has(Package, cpack:requires, Token),
+	rdf_has(Package, cpack:requires, Req),
+	(   rdf_is_literal(Req)
+	->  Token = Req
+	;   rdf_has(Req, cpack:name, Token)
+	),
 	rdf_has(Required, cpack:provides, Token).
 
 cpack_requires_by_file(Package, Required) :-
