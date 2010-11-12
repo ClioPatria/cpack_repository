@@ -77,7 +77,8 @@ cpack_add_repository(User, URL, Options) :-
 	directory_file_path(MirrorDir, BareGit, BareGitPath),
 	(   exists_directory(BareGitPath)
 	->  cpack_update_repository(User, URL, Options)
-	;   git([clone, '--mirror', URL, BareGitPath], [])
+	;   git([clone, '--mirror', URL, BareGitPath], []),
+	    rdf_assert(User, cpack:submitted, Graph, User)
 	),
 	update_metadata(BareGitPath, Graph, [user(User),cloned(URL)|Options]).
 
@@ -140,10 +141,6 @@ update_metadata(BareGitPath, Graph, Options) :-
 	load_meta_data(BareGitPath, Graph, Options),
 	update_decription(BareGitPath, Graph),
 	add_timestamp(Graph),
-	(   option(user(User), Options)
-	->  rdf_assert(User, cpack:submitted, Graph, User)
-	;   true
-	),
 	(   option(cloned(ClonedURL), Options)
 	->  option(branch(Branch), Options, master),
 	    rdf_bnode(Cloned),
