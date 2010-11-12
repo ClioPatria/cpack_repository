@@ -126,7 +126,7 @@ cpack_update_repository(User, URL, Options) :-
 update_allowed(_, _, Options) :-
 	option(allowed(true), Options), !.
 update_allowed(User, Package, _) :-
-	rdf_has(User, cpack:submitted, Package, User), !.
+	rdf(User, cpack:submitted, Package, User), !.
 update_allowed(_, Package, _) :-
 	permission_error(update, cpack, Package).
 
