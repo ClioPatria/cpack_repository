@@ -256,7 +256,7 @@ file_base(Path, Base) :-
 
 file_type(File, cpack:'PrologFile') :-
 	file_name_extension(_Base, Ext, File),
-	prolog_file_type(Ext, prolog), !.
+	user:prolog_file_type(Ext, prolog), !.
 file_type(_, cpack:'File').
 
 

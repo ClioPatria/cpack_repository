@@ -313,11 +313,15 @@ required_predicates(FileURL) -->
 
 required_predicate(File, PI) -->
 	{ rdf_has(File2, cpack:exportsPredicate, PI),
-	  rdf_has(File2, cpack:resolves, FileRef),
-	  rdf_has(File, cpack:usesFile, FileRef)
+	  (   rdf_has(File2, cpack:resolves, FileRef),
+	      rdf_has(File, cpack:usesFile, FileRef)
+	  ->  Ref = FileRef
+	  ;   rdf_has(File, cpack:usesFile, File2)
+	  ->  Ref = File2
+	  )
 	}, !,
 	cpack_link(PI),
-	html([span(class(msg_informational), ' from '), \cpack_link(FileRef)]).
+	html([span(class(msg_informational), ' from '), \cpack_link(Ref)]).
 required_predicate(_File, literal(LPI)) -->
 	{ atom_to_term(LPI, Name/Arity, []),
 	  functor(Head, Name, Arity),
@@ -325,6 +329,13 @@ required_predicate(_File, literal(LPI)) -->
 	}, !,
 	cpack_link(literal(LPI)),
 	html([span(class(msg_informational), ' autoloaded')]).
+required_predicate(_File, literal(LPI)) -->
+	{ atom_to_term(LPI, Name/Arity, []),
+	  current_predicate(user:Name/Arity)
+	}, !,
+	cpack_link(literal(LPI)),
+	html([span(class(msg_informational),
+		   ' global predicate in module user')]).
 required_predicate(_File, PI) -->
 	cpack_link(PI),
 	html(span(class(msg_error), ' undefined')).
@@ -339,7 +350,7 @@ file_imports(File) -->
 				cpack:usesPackageFile),
 		    \li_imports(File, 'From ClioPatria',
 				cpack:usesClioPatriaFile),
-		    \li_imports(File, 'From Prolog',
+		    \li_imports(File, 'From the Prolog library',
 				cpack:usesSystemFile)
 		  ])
 	     ]).
@@ -383,7 +394,11 @@ import_from_file(File-Predicates) -->
 
 imported_predicate_list(File, []) -->
 	{ rdf_has(File, cpack:exportsPredicate, _) }, !,
-	html([' ', span(class(msg_warning), 'no exports used')]).
+	html([' ', span([ class(msg_warning),
+			  title('Prolog cross-reference analysis is \
+			         incomplete, so this is not proof of an error')
+			],
+			'could not find proof of dependency')]).
 imported_predicate_list(_, []) --> !,
 	html([' ', span(class(msg_informational), 'no exports')]).
 imported_predicate_list(_, Predicates) -->
