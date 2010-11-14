@@ -323,8 +323,8 @@ required_predicate(File, PI) -->
 	cpack_link(PI),
 	html([span(class(msg_informational), ' from '), \cpack_link(Ref)]).
 required_predicate(_File, literal(LPI)) -->
-	{ atom_to_term(LPI, Name/Arity, []),
-	  functor(Head, Name, Arity),
+	{ atom_to_term(LPI, PI, []),
+	  pi_head(PI, Head),
 	  predicate_property(Head, autoload(_From)) % TBD: indicate location
 	}, !,
 	cpack_link(literal(LPI)),
@@ -336,9 +336,22 @@ required_predicate(_File, literal(LPI)) -->
 	cpack_link(literal(LPI)),
 	html([span(class(msg_informational),
 		   ' global predicate in module user')]).
+required_predicate(_File, literal(LPI)) -->
+	{ atom_to_term(LPI, PI, []),
+	  pi_head(PI, Head),
+	  predicate_property(Head, multifile)
+	}, !,
+	cpack_link(literal(LPI)),
+	html([span(class(msg_informational),
+		   ' multifile')]).
 required_predicate(_File, PI) -->
 	cpack_link(PI),
 	html(span(class(msg_error), ' undefined')).
+
+pi_head(M:PI, M:Head) :- !,
+	pi_head(PI, Head).
+pi_head(Name/Arity, Head) :-
+	functor(Head, Name, Arity).
 
 %%	file_imports(+File)// is det.
 %
