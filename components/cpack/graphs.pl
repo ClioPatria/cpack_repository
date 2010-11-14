@@ -31,14 +31,14 @@
 :- module(c_cpack_graphs,
 	  [ cpack_dependency_graph//2	% +URI, +Options
 	  ]).
-:- include(bundle(html_page)).
+:- use_module(library(http/html_write)).
 :- use_module(library(lists)).
 :- use_module(library(count)).
 :- use_module(components(graphviz)).
+:- use_module(components(label)).		% resource_link/2
 :- use_module(library(cpack/dependency)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_abstract)).
-:- use_module(components(label)).
 
 
 %%	cpack_dependency_graph(+URI, +Options)// is det.
