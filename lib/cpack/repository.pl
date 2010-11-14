@@ -32,9 +32,11 @@
 	  [ cpack_add_repository/3,	% +User, +GitRepo, +Options
 	    cpack_update_package/2,	% +User, +Package
 	    cpack_our_mirror/2,		% +Package, -MirrorDir
-	    cpack_shortlog/3,		% +Package, -ShortLog, +Options
 	    cpack_uri/3,		% +Type, +Object, -URI
-	    git_log_data/3		% ?Field, ?Record, ?Data
+	    cpack_log/3,		% +Package, -ShortLog, +Options
+	    git_log_data/3,		% ?Field, ?Record, ?Data
+	    cpack_show/4,		% +Package, +Hash, -Data, +Options
+	    commit_data/3		% ?Field, ?Record, ?Data
 	  ]).
 :- use_module(library(lists)).
 :- use_module(library(record)).
@@ -46,6 +48,7 @@
 :- use_module(library(filesex)).
 :- use_module(library(http/http_wrapper)).
 :- use_module(library(http/http_host)).
+:- use_module(library(http/dcg_basics)).
 :- use_module(xref).
 
 /** <module> Manage CPACK repositories
@@ -325,7 +328,7 @@ cpack_our_mirror(Pack, BareGitPath) :-
 	setting(cpack:mirrors, MirrorDir),
 	directory_file_path(MirrorDir, BareGit, BareGitPath).
 
-%%	cpack_shortlog(+Pack, -ShortLog, Options) is det.
+%%	cpack_log(+Pack, -ShortLog, Options) is det.
 %
 %	Fetch information like the  GitWeb   change  overview. Processed
 %	options:
@@ -338,53 +341,194 @@ cpack_our_mirror(Pack, BareGitPath) :-
 %	@param ShortLog is a list of =git_log= records.
 
 :- record
-	git_log(hash:atom,
-		date:atom,
-		committer:atom,
-		title:atom,
-		decoration:atom).
+	git_log(commit_hash:atom,
+		committer_name:atom,
+		committer_date_relative:atom,
+		subject:atom,
+		ref_names:list).
 
-cpack_shortlog(Pack, ShortLog, Options) :-
+cpack_log(Pack, ShortLog, Options) :-
 	option(limit(Limit), Options, 10),
 	(   option(path(Path), Options)
 	->  Extra = ['--', Path]
 	;   Extra = []
 	),
 	cpack_our_mirror(Pack, BareGitPath),
-	git_process_output([ log, '-n', Limit,
-			     '--format=%H%x00%cr%x00%cn%x00%s%x00%d%x00'
+	git_format_string(git_log, Fields, Format),
+	git_process_output([ log, '-n', Limit, Format
 			   | Extra
 			   ],
-			   read_shortlog(ShortLog),
+			   read_git_formatted(git_log, Fields, ShortLog),
 			   [directory(BareGitPath)]).
 
 
-read_shortlog(ShortLog, In) :-
+read_git_formatted(Record, Fields, ShortLog, In) :-
 	read_line_to_codes(In, Line0),
-	read_shortlog(Line0, In, ShortLog).
+	read_git_formatted(Line0, In, Record, Fields, ShortLog).
 
-read_shortlog(end_of_file, _, []).
-read_shortlog(Line, In, [H|T]) :-
-	phrase(parse_shortlog(H), Line),
+read_git_formatted(end_of_file, _, _, _, []).
+read_git_formatted(Line, In, Record, Fields, [H|T]) :-
+	record_from_line(Record, Fields, Line, H),
 	read_line_to_codes(In, Line1),
-	read_shortlog(Line1, In, T).
+	read_git_formatted(Line1, In, Record, Fields, T).
 
-parse_shortlog(Record) -->
-	{ default_git_log(Record) },
-	field(Record, hash),
-	field(Record, date),
-	field(Record, committer),
-	field(Record, title),
-	field(Record, decoration).
+record_from_line(RecordName, Fields, Line, Record) :-
+	phrase(fields_from_line(Fields, Values), Line),
+	Record =.. [RecordName|Values].
 
-field(Record, Field) -->
+fields_from_line([], []) --> [].
+fields_from_line([F|FT], [V|VT]) -->
 	to_nul_s(Codes),
-	{ atom_codes(Value, Codes),
-	  git_log_data(Field, Record, Value)
-	}.
+	{ field_to_prolog(F, Codes, V) },
+	fields_from_line(FT, VT).
 
 to_nul_s([]) --> [0], !.
 to_nul_s([H|T]) --> [H], to_nul_s(T).
+
+field_to_prolog(ref_names, Line, List) :-
+	phrase(ref_names(List), Line), !.
+field_to_prolog(_, Line, Atom) :-
+	atom_codes(Atom, Line).
+
+ref_names([]) --> [].
+ref_names(List) -->
+	blanks, "(", ref_name_list(List), ")".
+
+ref_name_list([H|T]) -->
+	string_without(",)", Codes),
+	{ atom_codes(H, Codes) },
+	(   ",", blanks
+	->  ref_name_list(T)
+	;   {T=[]}
+	).
+
+
+%%	cpack_show(+Pack, +Hash, -Commit) is det.
+%
+%	Fetch info from a GIT commit.  Options processed:
+%
+%	  * diff(Diff)
+%	  GIT option on how to format diffs.  E.g. =stat=
+%	  * max_lines(Count)
+%	  Truncate the body at Count lines.
+%
+%	@param	Commit is a term git_commit(...)-Body.  Body is currently
+%		a list of lines, each line represented as a list of
+%		codes.
+
+:- record
+	commit(tree_hash:atom,
+	       parent_hashes:list,
+	       author_name:atom,
+	       author_date:atom,
+	       committer_name:atom,
+	       committer_date:atom,
+	       subject:atom).
+
+cpack_show(Pack, Hash, Commit, Options) :-
+	cpack_our_mirror(Pack, BareGitPath),
+	git_format_string(commit, Fields, Format),
+	option(diff(Diff), Options, patch),
+	diff_arg(Diff, DiffArg),
+	git_process_output([ show, DiffArg, Hash, Format ],
+			   read_commit(Fields, Commit, Options),
+			   [directory(BareGitPath)]).
+
+diff_arg(patch, '-p').
+diff_arg(stat, '--stat').
+
+read_commit(Fields, Data-Body, Options, In) :-
+	read_line_to_codes(In, Line1),
+	record_from_line(commit, Fields, Line1, Data),
+	read_line_to_codes(In, Line2),
+	Line2 == [],
+	option(max_lines(Max), Options, -1),
+	read_n_lines(In, Max, Body).
+
+read_n_lines(In, Max, Lines) :-
+	read_line_to_codes(In, Line1),
+	read_n_lines(Line1, Max, In, Lines).
+
+read_n_lines(end_of_file, _, _, []) :- !.
+read_n_lines(_, 0, In, []) :- !,
+	setup_call_cleanup(open_null_stream(Out),
+			   copy_stream_data(In, Out),
+			   close(Out)).
+read_n_lines(Line, Max0, In, [Line|More]) :-
+	read_line_to_codes(In, Line2),
+	Max is Max0-1,
+	read_n_lines(Line2, Max, In, More).
+
+
+%%	git_format_string(+Record, -FieldNames, -Format)
+%
+%	If Record is a record with  fields   whose  names  match the GIT
+%	format field-names, Format is a  git =|--format=|= argument with
+%	the appropriate format-specifiers,  terminated   by  %x00, which
+%	causes the actual field to be 0-terminated.
+
+:- meta_predicate
+	git_format_string(:, -, -).
+
+git_format_string(M:RecordName, Fields, Format) :-
+	current_record(RecordName, M:Term),
+	findall(F, record_field(Term, F), Fields),
+	maplist(git_field_format, Fields, Formats),
+	atomic_list_concat(['--format='|Formats], Format).
+
+record_field(Term, Name) :-
+	arg(_, Term, Field),
+	field_name(Field, Name).
+
+field_name(Name:_Type=_Default, Name) :- !.
+field_name(Name:_Type, Name) :- !.
+field_name(Name=_Default, Name) :- !.
+field_name(Name, Name).
+
+git_field_format(Field, Fmt) :-
+	(   git_format(NoPercent, Field)
+	->  atomic_list_concat(['%', NoPercent, '%x00'], Fmt)
+	;   existence_error(git_format, Field)
+	).
+
+git_format('H', commit_hash).
+git_format('h', abbreviated_commit_hash).
+git_format('T', tree_hash).
+git_format('t', abbreviated_tree_hash).
+git_format('P', parent_hashes).
+git_format('p', abbreviated_parent_hashes).
+
+git_format('an', author_name).
+git_format('aN', author_name_mailcap).
+git_format('ae', author_email).
+git_format('aE', author_email_mailcap).
+git_format('ad', author_date).
+git_format('aD', author_date_rfc2822).
+git_format('ar', author_date_relative).
+git_format('at', author_date_unix).
+git_format('ai', author_date_iso8601).
+
+git_format('cn', committer_name).
+git_format('cN', committer_name_mailcap).
+git_format('ce', committer_email).
+git_format('cE', committer_email_mailcap).
+git_format('cd', committer_date).
+git_format('cD', committer_date_rfc2822).
+git_format('cr', committer_date_relative).
+git_format('ct', committer_date_unix).
+git_format('ci', committer_date_iso8601).
+
+git_format('d', ref_names).		% git log?
+git_format('e', encoding).		% git log?
+
+git_format('s', subject).
+git_format('f', subject_sanitized).
+git_format('b', body).
+git_format('N', notes).
+
+git_format('gD', reflog_selector).
+git_format('gd', shortened_reflog_selector).
+git_format('gs', reflog_subject).
 
 
 		 /*******************************

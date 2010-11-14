@@ -212,11 +212,24 @@ git_show(Request) :-
 			    [ oneof([commit]),
 			      description('Action to perform')
 			    ]),
-			  h(_Hash,
+			  h(Hash,
 			    [ description('Hash to work on')
 			    ]),
-			  r(_Project,
-			    [ description('URI of the project')
-			    ])
+			  r(Pack,
+			    [ description('URI of a cpack:Package')
+			    ]),
+			  diff(Diff,
+			       [ oneof([stat,patch]),
+				 default(stat),
+				 description('Diff-style for commit')
+			       ])
 			]),
-	true.
+	rdf_display_label(Pack, Label),
+	reply_html_page(cliopatria(cpack),
+			title('Commit info'),
+			[ h1([Label, /, commit]),
+			  \commit_info(Pack, Hash, [diff(Diff)])
+			]).
+
+
+

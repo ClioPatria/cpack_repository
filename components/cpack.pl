@@ -31,9 +31,11 @@
 :- module(c_cpack,
 	  [ cpack//2,			% +Pack, +Options
 	    cpack_link//1,		% +Resource
-	    cpack_prop//2		% +Resource, +Prop
+	    cpack_prop//2,		% +Resource, +Prop
+	    commit_info//3		% +Record, +Body, +Options
 	  ]).
 :- include(bundle(html_page)).
+:- use_module(library(http/dcg_basics)).
 :- use_module(library(cpack/repository)).
 :- use_module(library(cpack/dependency)).
 :- use_module(library(semweb/rdf_db)).
@@ -101,8 +103,12 @@ cpack(Pack, _Options) -->
 		 ])).
 
 
+%%	git_shortlog(+Pack, +Options)//
+%
+%	Component that show the top-N most recent changes in Pack.
+
 git_shortlog(Pack, Options) -->
-	{ cpack_shortlog(Pack, ShortLog, Options) },
+	{ cpack_log(Pack, ShortLog, Options) },
 	html([ h3('Recent changes'),
 	       table(class(git_shortlog),
 		     \shortlog_rows(ShortLog, Pack, 1))
@@ -114,18 +120,128 @@ shortlog_rows([H|T], Pack, Row) -->
 	shortlog_rows(T, Pack, Next).
 
 shortlog_row(Record, Pack) -->
-	{ git_log_data(hash, Record, Commit),
+	{ git_log_data(commit_hash, Record, Commit),
 	  http_link_to_id(git_show, [a(commit),h(Commit),r(Pack)], HREF)
 	},
-	html([ \td_git_log(date, Record),
-	       \td_git_log(committer, Record),
-	       \td_git_log(title, Record),
+	html([ \td_git_log(committer_date_relative, Record),
+	       \td_git_log(committer_name, Record),
+	       \td_git_log(subject_and_refnames, Record),
 	       td(a(href(HREF), commit))
 	     ]).
 
+td_git_log(subject_and_refnames, Record) --> !,
+	{ git_log_data(subject, Record, Subject),
+	  git_log_data(ref_names, Record, RefNames)
+	},
+	html(td(class(subject), [Subject, \ref_names(RefNames)])).
 td_git_log(Field, Record) -->
-	{ git_log_data(Field, Record, Value) },
-	html(td(class(Field), Value)).
+	{ git_log_data(Field, Record, Value),
+	  (   Value == ''
+	  ->  Class = empty
+	  ;   Class = Field
+	  )
+	},
+	html(td(class(Class), Value)).
+
+ref_names([]) --> !.
+ref_names(List) -->
+	html(span(class(ref_names), \ref_name_list(List))).
+
+ref_name_list([]) --> [].
+ref_name_list([H|T]) -->
+	html(span(class(ref_name), H)), ref_name_list(T).
+
+
+%%	commit_info(+Pack, +Hash, +Options)//
+%
+%	Component to show an individual commit.  Options:
+%
+%	  * diff(Diff)
+%	  One of =stat= (default) or =patch= (full difference)
+
+commit_info(Pack, Hash, Options) -->
+	{ select_option(diff(Diff), Options, Rest, stat),
+	  cpack_show(Pack, Hash, Record-Body, [diff(Diff)|Rest]),
+	  commit_data(subject, Record, Subject)
+	},
+	html_requires(css('cpack.css')),
+	html(div(class(cpack),
+		 [ h2(Subject),
+		   table(class(commit),
+			 [ \tr_commit(author,	 author_name, Record),
+			   \tr_commit('',        author_date, Record),
+			   \tr_commit(committer, committer_name, Record),
+			   \tr_commit('',        committer_date, Record),
+			   tr([th(commit),       td(class(commit), Hash)]),
+			   \tr_commit(tree,      tree_hash, Record),
+			   \tr_commit(parent,    parent_hashes, Record)
+			 ]),
+		   \select_diff(Diff),
+		   pre(class(commitdiff),
+		       \diff_lines(Body, Diff))
+		 ])).
+
+select_diff(Now) -->
+	{ other_diff(Now, Other),
+	  http_current_request(Request),
+	  http_reload_with_parameters(Request, [diff(Other)], HREF)
+	},
+	html(div(class(diffstyle),
+	       ['Diff style: ', b(Now), ' ', a(href(HREF), Other)])).
+
+other_diff(patch, stat).
+other_diff(stat, patch).
+
+diff_lines([], _) --> [].
+diff_lines([Line|T], Diff) -->
+	(   { diff_line_class(Line, Diff, Class) }
+	->  html(span(class(Class), ['~s'-[Line]]))
+	;   diff_line(Line, Diff)
+	->  []
+	;   html('~s'-[Line])
+	),
+	(   {T==[]}
+	->  []
+	;   ['\n'],
+	    diff_lines(T, Diff)
+	).
+
+term_expansion(diff_line_class(Start, Diff, Class),
+	       diff_line_class(Codes, Diff, Class)) :-
+	is_list(Start),
+	append(Start, _, Codes).
+
+diff_line_class("diff ", patch, diff).
+diff_line_class("--- ", patch, a).
+diff_line_class("+++ ", patch, b).
+diff_line_class("-", patch, del).
+diff_line_class("+", patch, add).
+
+diff_line(Line, stat) -->
+	{ phrase(dirstat(File, Sep, Count, Plusses, Minus), Line) },
+	html([ ' ', span(class(file), '~s'-[File]),
+	       '~s'-[Sep],
+	       '~s'-[Count], ' ',
+	       span(class(add), '~s'-[Plusses]),
+	       span(class(del), '~s'-[Minus])
+	     ]).
+
+dirstat(File, Sep, [D0|RD], Plusses, Minus) -->
+	" ",
+	string_without(" ", File),
+	string(Sep),
+	digit(D0),digits(RD),
+	" ",
+	codes("+", Plusses),
+	codes("-", Minus).
+
+codes(Set, [H|T]) --> [H], { memberchk(H, Set) }, !, codes(Set, T).
+codes(_, []) --> [].
+
+
+tr_commit(Label, Field, Record) -->
+	{ commit_data(Field, Record, Value) },
+	html(tr([th(Label), td(class(Field), Value)])).
 
 
 %%	files_in_pack(+Pack)// is det.

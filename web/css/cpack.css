@@ -27,13 +27,24 @@ table.git_shortlog td
 { padding: 0px 5px;
 }
 
-table.git_shortlog td.title
+table.git_shortlog td.subject
 { font-weight: bold;
 }
 
-table.git_shortlog td.committer
+table.git_shortlog td.committer_name
 { font-style: italic;
   font-weight: 200;
+}
+
+table.git_shortlog span.ref_names
+{ margin-left: 0.5em;
+}
+
+table.git_shortlog span.ref_name
+{ background-color: #a2ffa1;
+  border-color: #a2ffa1;
+  border: 1px outset;
+  padding: 0px 2px;
 }
 
 ul.files
@@ -51,4 +62,43 @@ div.cpack h2 a
   font-size: 60%;
   font-style: italic;
   font-weight: normal;
+}
+
+/* Commit data */
+
+div.cpack table.commit
+{ margin-left: 5%;
+  margin-bottom: 1em;
+}
+
+div.cpack table.commit th
+{ text-align: right;
+}
+
+div.cpack table.commit td.tree_hash,td.commit,td.parent_hashes
+{ font-family: monospace;
+}
+
+
+pre.commitdiff
+{ border: 1px dotted;
+  padding: 2px 5px;
+  margin-top: 0px;
+}
+
+pre.commitdiff span.add
+{ color: green;
+}
+
+pre.commitdiff span.diff,span.a,span.b,span.file
+{ font-weight: bold;
+}
+
+pre.commitdiff span.del
+{ color: red;
+}
+
+div.diffstyle
+{ text-align: right;
+  font-size: smaller;
 }
