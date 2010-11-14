@@ -309,7 +309,18 @@ required_predicates(FileURL) -->
 	{ findall(PI, rdf_has(FileURL, cpack:requiresPredicate, PI), List)
 	},
 	html(h3('Required predicates')),
-	list_ul(List, []).
+	list(List, required_predicate(FileURL), ul).
+
+required_predicate(File, PI) -->
+	{ rdf_has(File2, cpack:exportsPredicate, PI),
+	  rdf_has(File2, cpack:resolves, FileRef),
+	  rdf_has(File, cpack:usesFile, FileRef)
+	}, !,
+	cpack_link(PI),
+	html([span(class(msg_informational), ' from '), \cpack_link(FileRef)]).
+required_predicate(_File, PI) -->
+	cpack_link(PI),
+	html(span(class(msg_error), ' undefined')).
 
 %%	file_imports(+File)// is det.
 %
@@ -401,11 +412,17 @@ used_by(File) -->
 	  Pairs \== []
 	}, !,
 	html([ h3('This file is used by'),
-	       \list(Pairs, file_in_package, ul)
+	       \list(Pairs, file_in_package(File), ul)
 	     ]).
 used_by(_) --> [].
 
-file_in_package(File-Pack) -->
+file_in_package(Me, File-Pack) -->
+	{ rdf_has(Me, cpack:inPack, Pack) }, !,
+	html([ \cpack_link(File, cpack:path),
+	       span(class(msg_informational),
+		    ' (from the same package)')
+	     ]).
+file_in_package(_, File-Pack) -->
 	html([ \cpack_link(File, cpack:path),
 	       ' from package ',
 	       \cpack_link(Pack)
