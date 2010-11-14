@@ -186,7 +186,8 @@ system_file_uri(Path, Root, Class, Graph, URI) :-
 	    (	xref_public_list(Path, _, Module, Public, _Meta, -)
 	    ->	rdf_assert(URI, cpack:module, literal(Module), Graph),
 		forall(member(PI, Public),
-		       (   format(atom(Id), '~q', PI),
+		       (   cannonical_pi(PI, CannPI),
+		           format(atom(Id), '~q', [CannPI]),
 			   rdf_assert(URI, cpack:exportsPredicate,
 				      literal(Id), Graph)
 		       ))
@@ -194,6 +195,9 @@ system_file_uri(Path, Root, Class, Graph, URI) :-
 	    )
 	).
 
+cannonical_pi(Name//DCGArity, Name/Arity) :- !,
+	Arity is DCGArity + 2.
+cannonical_pi(PI, PI).
 
 		 /*******************************
 		 *	   FIND FILES		*

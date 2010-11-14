@@ -318,6 +318,13 @@ required_predicate(File, PI) -->
 	}, !,
 	cpack_link(PI),
 	html([span(class(msg_informational), ' from '), \cpack_link(FileRef)]).
+required_predicate(_File, literal(LPI)) -->
+	{ atom_to_term(LPI, Name/Arity, []),
+	  functor(Head, Name, Arity),
+	  predicate_property(Head, autoload(_From)) % TBD: indicate location
+	}, !,
+	cpack_link(literal(LPI)),
+	html([span(class(msg_informational), ' autoloaded')]).
 required_predicate(_File, PI) -->
 	cpack_link(PI),
 	html(span(class(msg_error), ' undefined')).
