@@ -120,21 +120,20 @@ shortlog_rows([H|T], Pack, Row) -->
 	shortlog_rows(T, Pack, Next).
 
 shortlog_row(Record, Pack) -->
-	{ git_log_data(commit_hash, Record, Commit),
-	  http_link_to_id(git_show, [a(commit),h(Commit),r(Pack)], HREF)
-	},
-	html([ \td_git_log(committer_date_relative, Record),
-	       \td_git_log(committer_name, Record),
-	       \td_git_log(subject_and_refnames, Record),
-	       td(a(href(HREF), commit))
+	html([ \td_git_log(Pack, committer_date_relative, Record),
+	       \td_git_log(Pack, committer_name, Record),
+	       \td_git_log(Pack, subject_and_refnames, Record)
 	     ]).
 
-td_git_log(subject_and_refnames, Record) --> !,
+td_git_log(Pack, subject_and_refnames, Record) --> !,
 	{ git_log_data(subject, Record, Subject),
-	  git_log_data(ref_names, Record, RefNames)
+	  git_log_data(ref_names, Record, RefNames),
+	  git_log_data(commit_hash, Record, Commit),
+	  http_link_to_id(git_show, [a(commit),h(Commit),r(Pack)], HREF)
 	},
-	html(td(class(subject), [Subject, \ref_names(RefNames)])).
-td_git_log(Field, Record) -->
+	html(td(class(subject),
+		[ a(href(HREF), Subject), \ref_names(RefNames)])).
+td_git_log(_, Field, Record) -->
 	{ git_log_data(Field, Record, Value),
 	  (   Value == ''
 	  ->  Class = empty

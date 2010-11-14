@@ -27,8 +27,15 @@ table.git_shortlog td
 { padding: 0px 5px;
 }
 
-table.git_shortlog td.subject
+table.git_shortlog td.subject a
 { font-weight: bold;
+  text-decoration: none;
+  color: #000;
+}
+
+table.git_shortlog td.subject a:hover
+{ text-decoration: underline;
+  color: blue;
 }
 
 table.git_shortlog td.committer_name
