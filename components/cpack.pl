@@ -283,9 +283,13 @@ download(FileURL) -->
 	html(a([href(HREF), style('float:right')], '[download]')).
 
 
+%%	prolog_file(+FileURL)// is det.
+%
+%	Describe our knowledge about a Prolog source file.
+
 prolog_file(FileURL) -->
 	{ rdfs_individual_of(FileURL, cpack:'PrologFile') }, !,
-	html([ \imports(FileURL),
+	html([ \file_imports(FileURL),
 	       \used_by(FileURL),
 	       \exported_predicates(FileURL),
 	       \required_predicates(FileURL)
@@ -307,27 +311,31 @@ required_predicates(FileURL) -->
 	html(h3('Required predicates')),
 	list_ul(List, []).
 
-%%	imports(+File)// is det.
+%%	file_imports(+File)// is det.
 %
 %	Show required dependencies of this file.
 
-imports(File) -->
+file_imports(File) -->
 	html([ h3('Imported files'),
-	       ul([ li(\imports(File, 'From packages',
-				cpack:usesPackageFile)),
-		    li(\imports(File, 'From ClioPatria',
-				cpack:usesClioPatriaFile)),
-		    li(\imports(File, 'From Prolog',
-				cpack:usesSystemFile))
+	       ul([ \li_imports(File, 'From packages',
+				cpack:usesPackageFile),
+		    \li_imports(File, 'From ClioPatria',
+				cpack:usesClioPatriaFile),
+		    \li_imports(File, 'From Prolog',
+				cpack:usesSystemFile)
 		  ])
 	     ]).
 
-imports(File, Label, P0) -->
+li_imports(File, Label, P0) -->
 	{ rdf_global_id(P0, P),
-	  findall(I, rdf_has(File, P, I), Imports)
-	},
-	html(Label),
-	list_ul(Imports, []).
+	  findall(I, rdf_has(File, P, I), Imports),
+	  Imports \== []
+	}, !,
+	html(li([ Label,
+		  \list_ul(Imports, [])
+		])).
+li_imports(_, _, _) -->
+	[].
 
 %%	used_by(+File)// is det.
 %
