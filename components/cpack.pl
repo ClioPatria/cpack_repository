@@ -316,7 +316,7 @@ required_predicates(FileURL) -->
 %	Show required dependencies of this file.
 
 file_imports(File) -->
-	html([ h3('Imported files'),
+	html([ h3('This file requires'),
 	       ul([ \li_imports(File, 'From packages',
 				cpack:usesPackageFile),
 		    \li_imports(File, 'From ClioPatria',
@@ -332,10 +332,62 @@ li_imports(File, Label, P0) -->
 	  Imports \== []
 	}, !,
 	html(li([ Label,
-		  \list_ul(Imports, [])
+		  \list(Imports, import_into(File), ul)
 		])).
 li_imports(_, _, _) -->
 	[].
+
+import_into(Me, FileRef) -->
+	{ rdfs_individual_of(FileRef, cpack:'FileRef'),
+	  findall(File-PIs, resolves_required(Me, FileRef, File, PIs), ByFile)
+	},
+	cpack_link(FileRef),
+	(   {ByFile==[]}
+	->  html([' ', span(class(msg_error), 'file not found')])
+	;   (   {ByFile=[_]}
+	    ->  html([' ', span(class(msg_informational),
+				 'resolved by')])
+	    ;	html([' ', span(class(msg_warning),
+				'can be resolved by one of these')])
+	    ),
+	    list(ByFile, import_from_file, ul)
+	).
+import_into(Me, File) -->
+	{ rdfs_individual_of(File, cpack:'PrologFile'), !,
+	  predicates_resolved_by(Me, File, Predicates)
+	},
+	cpack_link(File),
+	imported_predicate_list(File, Predicates).
+
+import_from_file(File-Predicates) -->
+	cpack_link(File),
+	imported_predicate_list(File, Predicates).
+
+imported_predicate_list(File, []) -->
+	{ rdf_has(File, cpack:exportsPredicate, _) }, !,
+	html([' ', span(class(msg_warning), 'no exports used')]).
+imported_predicate_list(_, []) --> !,
+	html([' ', span(class(msg_informational), 'no exports')]).
+imported_predicate_list(_, Predicates) -->
+	html([': ', span(class(pi_list), \pi_list(Predicates))]).
+
+pi_list([H|T]) -->
+	html(span(class(pred), \cpack_link(H))),
+	(   {T==[]}
+	->  []
+	;   html(', '),
+	    pi_list(T)
+	).
+
+resolves_required(Me, Import, File, PIs) :-
+	  rdf_has(File, cpack:resolves, Import),
+	  predicates_resolved_by(Me, File, PIs).
+
+predicates_resolved_by(Me, File, PIs) :-
+	  findall(PI, (rdf_has(File, cpack:exportsPredicate, PI),
+		       rdf_has(Me, cpack:requiresPredicate, PI)
+		      ),
+		  PIs).
 
 %%	used_by(+File)// is det.
 %
