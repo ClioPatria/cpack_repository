@@ -299,10 +299,11 @@ cpack_uri(Type, Name, URI) :-
 	format(atom(URI), 'http://~w:~w/cpack/~w~w',
 	       [ Host, Port, Root, Name ]).
 
-type_root(package,  'packs/').
-type_root(file_ref, 'file_ref/').
-type_root(graph,    'graph/').
-
+type_root(package,    'packs/').
+type_root(file_ref,   'file_ref/').
+type_root(graph,      'graph/').
+type_root(prolog,     'prolog/').
+type_root(cliopatria, 'cliopatria/').
 
 package_graph(Package, Graph) :-
 	cpack_uri(package, Package, Graph).

@@ -31,7 +31,9 @@
 :- module(cpack_dependency,
 	  [ file_used_by_file_in_package/3, % +File, -UsedBy, -Package
 	    cpack_requires/3,		% +Package, -Package, -Why
-	    cpack_conflicts/3		% +Package, -Package, -Why
+	    cpack_conflicts/3,		% +Package, -Package, -Why
+	    file_not_satisfied/2,	% +File, -WhyNot
+	    file_imports_from/3		% +File, -Imports, -From
 	  ]).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
@@ -39,8 +41,17 @@
 
 /** <module> Query the CPACK dependency graph
 
-This module queries the RDF graph produced by xref.pl to compute
-high-level dependencies between objects.
+This module queries  the  RDF  graph   produced  by  xref.pl  to compute
+high-level dependencies between objects. Currently, we keep track of:
+
+  * Requirement reasons
+    - Files needed by one and provided by another package
+    - Tokens needed by one and provided by another package
+  * Conflict reasons
+    - Packages holding files that provide the same module
+    - Packages holding files with the same path
+
+@tbd	Extend reasoning
 */
 
 %%	file_used_by_file_in_package(+File, -UsedBy, -Package) is nondet.
@@ -83,6 +94,92 @@ cpack_requires_by(Package, Required, file_ref(FileRef)) :-
 
 %%	cpack_conflicts(+Package, -Conflict, -Why) is nondet.
 %
-%	True when Package and Conflict are in conflict.
+%	True  when  Package  and  Conflict   are  in  conflict.  Defined
+%	conflicts are:
+%
+%	  * same_module(Module,File1,File2)
+%	  Both files define the same module.  They cannot be loaded into
+%	  the same Prolog instance.  Note that this can cause a package
+%	  to conflict with itself!
+%	  * same_file(Path,File1,File2)
+%	  Two packages define files at the same path.  This is actually
+%	  not an issue in itself. It only becomes an issue if there are
+%	  file_ref objects that resolve them ambiguously.
 
-cpack_conflicts(_Package, _Conflict, _Why).
+cpack_conflicts(Package, Conflict, AllReasons) :-
+	setof(Why, cpack_conflicts_by(Package, Conflict, Why), AllReasons).
+
+cpack_conflicts_by(Package, Conflict, same_module(M,File1,File2)) :-
+	rdf_has(File1, cpack:module, Module),
+	rdf_has(File2, cpack:module, Module),
+	File1 \== File2,
+	Module = literal(M),
+	rdf_has(Package, cpack:in_file, File1),
+	rdf_has(Conflict, cpack:in_file, File2).
+cpack_conflicts_by(Package, Conflict, same_file(Path,File1,File2)) :-
+	rdf_has(File1, cpack:path, LPath),
+	rdf_has(File2, cpack:path, LPath),
+	File1 \== File2,
+	LPath = literal(Path),
+	rdf_has(Package, cpack:in_file, File1),
+	rdf_has(Conflict, cpack:in_file, File2).
+
+%%	cpack_not_satisfied(+Package, -WhyNot) is semidet.
+%
+%	True when WhyNot describes why Package is not satisfied.
+
+cpack_not_satisfied(_Package, _WhyNot) :-
+	true.
+
+%%	file_not_satisfied(+File, -Reasons) is semidet.
+%
+%	True when File's conditions are not satisfied due to Reasons.
+
+file_not_satisfied(File, AllReasons) :-
+	setof(Due, file_not_satisfied_due(File, Due), AllReasons).
+
+%%	file_not_satisfied_due(+File, -Problem)
+%
+%	True when Conflict describes an import   problem for File. There
+%	are two types of import problems:
+%
+%	  * double_import(PI, File1, File2)
+%	  File imports File1 and File2 using use_module/1, both of which
+%	  export PI.
+%	  * locally_defined(PI, File)
+%	  A locally defined predicate is also imported from File.
+%	  * file_not_found(FileRef)
+%	  The given symbolic path cannot be found.
+%
+%	@tbd We do not yet keep track of locally defined predicates
+
+file_not_satisfied_due(File, double_import(PI,File1,File2)) :-
+	file_imports_pi_from(File, File1, PI),
+	file_imports_pi_from(File, File2, PI),
+	File1 \== File2.
+file_not_satisfied_due(File, file_not_found(FileRef)) :-
+	rdf_has(File, cpack:usesFile, FileRef),
+	rdfs_individual_of(FileRef, cpack:'FileRef'),
+	\+ rdf_has(_, cpack:resolves, FileRef).
+file_not_satisfied_due(File, predicate_not_found(PI)) :-
+	LPI = literal(PI),
+	rdf_has(File, cpack:requiresPredicate, LPI),
+	\+ file_imports_pi_from(File, _, LPI).
+
+%%	file_imports_from(+File, -Predicates, -From) is nondet.
+%
+%	True if File imports Predicates from the file From.
+%
+%	@param Predicates is a list of canonical predicate indicators.
+
+file_imports_from(File, PIs, From) :-
+	setof(PI, file_imports_pi_from(File, From, PI), PIs).
+
+file_imports_pi_from(File, UsedFile, PI) :-
+	rdf_has(File, cpack:usesFile, Uses),
+	(   rdfs_individual_of(Uses, cpack:'FileRef')
+	->  rdf_has(UsedFile, cpack:resolves, Uses)
+	;   UsedFile = Uses
+	),
+	rdf_has(UsedFile, cpack:exportsPredicate, literal(PI)).
+

@@ -117,10 +117,12 @@ file_property(File, UsesFile, Uses) :-
 	;   file_ref(Spec, Uses),
 	    (   Path == '<not_found>'
 	    ->  rdf_equal(UsesFile, cpack:usesPackageFile)
-	    ;   system_file(Path)
-	    ->  rdf_equal(UsesFile, cpack:usesSystemFile)
-	    ;   cliopatria_file(Path)
-	    ->  rdf_equal(UsesFile, cpack:usesClioPatriaFile)
+	    ;   system_file(Path, FileURI, Graph)
+	    ->  rdf_equal(UsesFile, cpack:usesSystemFile),
+		rdf_assert(FileURI, cpack:resolves, Uses, Graph)
+	    ;   cliopatria_file(Path, FileURI, Graph)
+	    ->  rdf_equal(UsesFile, cpack:usesClioPatriaFile),
+		rdf_assert(FileURI, cpack:resolves, Uses, Graph)
 	    ;   rdf_equal(UsesFile, cpack:usesPackageFile)
 	    )
 	).
@@ -140,28 +142,57 @@ xref_local_defined(Src, Callable) :-
 	How \= imported(_From).
 
 
-%%	system_file(+Path) is semidet.
-%%	cliopatria_file(+Path) is semidet.
+%%	system_file(+Path, -FileURI, -Graph) is semidet.
+%%	cliopatria_file(+Path, -FileURI, -Graph) is semidet.
 %
 %	Classify file according to their origin.
 
-system_file(Path) :-
-	current_prolog_flag(home, Home),
-	sub_atom(Path, 0, _, _, Home).
+:- rdf_meta
+	system_file_uri(+, +, r, r, r).
 
-cliopatria_file(Path) :-
+system_file(Path, FileURI, Graph) :-
+	current_prolog_flag(home, Home),
+	sub_atom(Path, 0, _, _, Home), !,
+	cpack_uri(graph, prolog, Graph),
+	system_file_uri(Path, Home, cpack:'SystemFile', Graph, FileURI).
+
+cliopatria_file(Path, FileURI, Graph) :-
 	absolute_file_name(cliopatria(.),
-			   ClioHome,
+			   Home,
 			   [ file_type(directory),
 			     access(read)
 			   ]),
-	sub_atom(Path, 0, _, _, ClioHome),
-	\+ loaded_package_file(Path).
+	sub_atom(Path, 0, _, _, Home),
+	\+ loaded_package_file(Path), !,
+	cpack_uri(graph, cliopatria, Graph),
+	system_file_uri(Path, Home, cpack:'ClioPatriaFile', Graph, FileURI).
 
 loaded_package_file(Path) :-
 	setting(cpack:package_directory, PackageDir),
 	absolute_file_name(PackageDir, PackageRoot),
 	sub_atom(Path, 0, _, _, PackageRoot).
+
+system_file_uri(Path, Root, Class, Graph, URI) :-
+	directory_file_path(Root, RelPath, Path),
+	cpack_uri(prolog, RelPath, URI),
+	(   rdfs_individual_of(URI, cpack:'File')
+	->  true
+	;   file_base(RelPath, Base),
+	    file_base_name(RelPath, FileName),
+	    rdf_assert(URI, rdf:type, Class, Graph),
+	    rdf_assert(URI, cpack:path, literal(RelPath), Graph),
+	    rdf_assert(URI, cpack:name, literal(FileName), Graph),
+	    rdf_assert(URI, cpack:base, literal(Base), Graph),
+	    (	xref_public_list(Path, _, Module, Public, _Meta, -)
+	    ->	rdf_assert(URI, cpack:module, literal(Module), Graph),
+		forall(member(PI, Public),
+		       (   format(atom(Id), '~q', PI),
+			   rdf_assert(URI, cpack:exportsPredicate,
+				      literal(Id), Graph)
+		       ))
+	    ;	true
+	    )
+	).
 
 
 		 /*******************************
@@ -200,7 +231,9 @@ path_rule(Alias, NewAlias) :-
 %%	file_ref(+Spec, -URI) is det.
 %
 %	True when URI is the URI for  a FileRef instance that represents
-%	the symbolic file-reference Spec.
+%	the  symbolic  file-reference  Spec.  If  there  is  already  an
+%	existing URI for the file-reference, this is returned. Otherwise
+%	it creates an instance of cpack:FileRef.
 
 file_ref(Spec, URI) :-
 	format(atom(Id), '~q', [Spec]),
