@@ -30,7 +30,8 @@
 
 :- module(cpack_dependency,
 	  [ file_used_by_file_in_package/3, % +File, -UsedBy, -Package
-	    cpack_requires/3		% +Package, -Package, -Why
+	    cpack_requires/3,		% +Package, -Package, -Why
+	    cpack_conflicts/3		% +Package, -Package, -Why
 	  ]).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
@@ -52,16 +53,20 @@ file_used_by_file_in_package(File, UsedBy, Pack) :-
 	rdf_has(UsedBy, cpack:inPack, Pack).
 
 
-%%	cpack_requires(+Package, -Required, -Why) is nondet.
+%%	cpack_requires(+Package, -Required, -Reasons) is nondet.
 %
-%	True when Package requires Required.
+%	True when Package requires Required. Reasons   is an ordered set
+%	of reasons. Individual reasons are one of:
+%
+%	  * token(Name)
+%	  Package requires _token_ that is provided by Required.
+%	  * file_ref(FileRef)
+%	  Package uses the file FileRef, which is provided by Required
 
-cpack_requires(Package, Required, token) :-
-	cpack_requires_by_token(Package, Required).
-cpack_requires(Package, Required, file) :-
-	cpack_requires_by_file(Package, Required).
+cpack_requires(Package, Required, AllReasons) :-
+	setof(Why, cpack_requires_by(Package, Required, Why), AllReasons).
 
-cpack_requires_by_token(Package, Required) :-
+cpack_requires_by(Package, Required, token(Token)) :-
 	rdf_has(Package, cpack:requires, Req),
 	(   rdf_is_literal(Req)
 	->  Token = Req
@@ -69,9 +74,15 @@ cpack_requires_by_token(Package, Required) :-
 	),
 	rdf_has(Required, cpack:provides, Token).
 
-cpack_requires_by_file(Package, Required) :-
+cpack_requires_by(Package, Required, file_ref(FileRef)) :-
 	rdf_has(File, cpack:inPack, Package),
 	rdf_has(File, cpack:usesFile, FileRef),
 	rdf_has(ReqFile, cpack:resolves, FileRef),
 	rdf_has(ReqFile, cpack:inPack, Required),
 	Required \== Package.
+
+%%	cpack_conflicts(+Package, -Conflict, -Why) is nondet.
+%
+%	True when Package and Conflict are in conflict.
+
+cpack_conflicts(_Package, _Conflict, _Why).

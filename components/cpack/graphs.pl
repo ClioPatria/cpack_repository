@@ -109,8 +109,23 @@ bf_expand([D-F|AG0], AG, MaxBranch, Triples) :-
 	append(AG0, Dsts, AG).
 
 related(S, O, rdf(S,P,O)) :-
-	rdf_equal(cpack:requiresPackage, P),
-	cpack_requires(S, O, _Why).
+	cpack_requires_p(S, O, P).
 related(O, S, rdf(S,P,O)) :-
-	rdf_equal(cpack:requiresPackage, P),
-	cpack_requires(S, O, _Why).
+	cpack_requires_p(S, O, P).
+
+:- rdf_meta
+	req_type_predicate(?, r).
+
+cpack_requires_p(Package, Required, P) :-
+	cpack_requires(Package, Required, Reasons),
+	maplist(functor_name, Reasons, Types),
+	sort(Types, Set),
+	(   Set = [One]
+	->  req_type_predicate(One, P)
+	;   rdf_equal(cpack:requiresPackage, P)
+	).
+
+functor_name(Term, Name) :- functor(Term, Name, _).
+
+req_type_predicate(token, cpack:requiresPackageByToken).
+req_type_predicate(file_ref, cpack:requiresPackageByFile).
