@@ -54,9 +54,17 @@ table.git_shortlog span.ref_name
   padding: 0px 2px;
 }
 
-ul.files
-{ margin-left: 5%;
-  padding-left: 0px;
+ul.file_hierarchy
+{ list-style-image: url('../icons/opendir.png');
+}
+
+ul.dir
+{ padding-left: 0.8em;
+  list-style-image: url('../icons/opendir.png');
+}
+
+ul.file_hierarchy li.file
+{ list-style-image: none;
   list-style-type: none;
 }
 

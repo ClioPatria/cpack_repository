@@ -249,8 +249,54 @@ tr_commit(Label, Field, Record) -->
 %	should consider a tree-styled nested =ul=?
 
 files_in_pack(Pack) -->
-	{ findall(File, rdf_has(File, cpack:inPack, Pack), Files) },
-	list_ul(Files, [class(files), predicate(cpack:path)]).
+	{ findall(File, rdf_has(File, cpack:inPack, Pack), Files),
+	  files_to_tree(Files, Trees)
+	},
+	html(ul(class(file_hierarchy),
+		\dir_nodes(Trees))).
+
+dir_nodes([]) --> [].
+dir_nodes([H|T]) --> dir_node(H), dir_nodes(T).
+
+dir_node(leaf(File)) --> !,
+	html(li(class(file), \cpack_link(File))).
+dir_node(tree(Dir, SubTrees)) -->
+	html(li(class(dir),
+		[ span(class(dir), Dir),
+		  ul(class(dir),
+		     \dir_nodes(SubTrees))
+		])).
+
+files_to_tree(Files, Tree) :-
+	map_list_to_pairs(path_of, Files, Pairs),
+	keysort(Pairs, Sorted),
+	make_tree(Sorted, Tree).
+
+path_of(File, Segments) :-
+	rdf_has(File, cpack:path, literal(Path)),
+	atomic_list_concat(Segments, /, Path).
+
+make_tree([], []).
+make_tree([H|T], [Node|More]) :-
+	first_path(H, HS, Dir),
+	(   HS = []-File
+	->  Node = leaf(File),
+	    Rest = T
+	;   Node = tree(Dir, SubTrees),
+	    same_first_path(T, Dir, TS, Rest),
+	    make_tree([HS|TS], SubTrees)
+	),
+	make_tree(Rest, More).
+
+first_path([Dir|Sub]-File, Sub-File, Dir).
+
+same_first_path([], _, [], []) :- !.
+same_first_path([H|T], Dir, [HS|TS], Rest) :-
+	first_path(H, HS, Dir), !,
+	same_first_path(T, Dir, TS, Rest).
+same_first_path(Rest, _, [], Rest).
+
+
 
 
 		 /*******************************
