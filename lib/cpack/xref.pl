@@ -249,6 +249,7 @@ path_rule(Alias, NewAlias) :-
 %	it creates an instance of cpack:FileRef.
 
 file_ref(Spec, URI) :-
+	must_be(ground, Spec),
 	format(atom(Id), '~q', [Spec]),
 	cpack_uri(file_ref, Id, URI),
 	(   rdf(URI, rdf:type, cpack:'FileRef')
@@ -265,6 +266,8 @@ file_base(Spec, Base) :-
 	atom(Spec), !,
 	file_base_name(Spec, File),
 	file_name_extension(Base, _Ext, File). % demand Prolog?
+file_base(_/Rest, Base) :- !,
+	file_base(Rest, Base).
 file_base(Spec, Base) :-
 	arg(1, Spec, Name),
 	file_base(Name, Base).
