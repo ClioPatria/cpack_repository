@@ -32,7 +32,8 @@
 	  [ file_used_by_file_in_package/3, % +File, -UsedBy, -Package
 	    cpack_requires/3,		% +Package, -Package, -Why
 	    cpack_conflicts/3,		% +Package, -Package, -Why
-	    file_not_satisfied/2,	% +File, -WhyNot
+	    cpack_not_satisfied/2,	% +Package, -Reasons
+	    file_not_satisfied/2,	% +File, -Reasons
 	    file_imports_from/3		% +File, -Imports, -From
 	  ]).
 :- use_module(library(semweb/rdf_db)).
@@ -128,8 +129,20 @@ cpack_conflicts_by(Package, Conflict, same_file(Path,File1,File2)) :-
 %
 %	True when WhyNot describes why Package is not satisfied.
 
-cpack_not_satisfied(_Package, _WhyNot) :-
-	true.
+cpack_not_satisfied(Pack, AllReasons) :-
+	setof(Due, cpack_not_satisfied_due(Pack, Due), AllReasons).
+
+cpack_not_satisfied_due(Package, no_token(Token)) :-
+	rdf_has(Package, cpack:requires, Req),
+	(   rdf_is_literal(Req)
+	->  Token = Req
+	;   rdf_has(Req, cpack:name, Token)
+	),
+	\+ rdf_has(_, cpack:provides, Token).
+cpack_not_satisfied_due(Package, file(File, Problems)) :-
+	rdf_has(File, cpack:inPack, Package),
+	file_not_satisfied(File, Problems).
+
 
 %%	file_not_satisfied(+File, -Reasons) is semidet.
 %
@@ -164,7 +177,21 @@ file_not_satisfied_due(File, file_not_found(FileRef)) :-
 file_not_satisfied_due(File, predicate_not_found(PI)) :-
 	LPI = literal(PI),
 	rdf_has(File, cpack:requiresPredicate, LPI),
-	\+ file_imports_pi_from(File, _, LPI).
+	\+ file_imports_pi_from(File, _, PI),
+	\+ other_source(PI).
+
+other_source(API) :-
+	atom_to_term(API, PI, []),
+	pi_head(PI, Head),
+	(   predicate_property(Head, multifile)
+	;   predicate_property(Head, autoload(_))
+	).
+
+pi_head(M:PI, M:Head) :- !,
+	pi_head(PI, Head).
+pi_head(Name/Arity, Head) :-
+	functor(Head, Name, Arity).
+
 
 %%	file_imports_from(+File, -Predicates, -From) is nondet.
 %

@@ -39,6 +39,7 @@
 :- use_module(user(user_db)).
 :- use_module(library(http/http_path)).
 :- use_module(library(cpack/repository)).
+:- use_module(library(cpack/dependency)).
 :- use_module(components(messages)).
 :- use_module(components(label)).
 :- use_module(components(cpack)).
@@ -126,9 +127,11 @@ list_packages(Options) :-
 	findall(Package, current_package(Package, Options), Packages),
 	reply_html_page(cliopatria(cpack),
 			title('CPACK packages'),
-			[ h1('CPACK packages'),
-			  \package_table(Packages, []),
-			  \update_all_link(Options)
+			[ div(class(cpack),
+			      [ h1('CPACK packages'),
+				\package_table(Packages, []),
+				\update_all_link(Options)
+			      ])
 			]).
 
 current_package(Package, Options) :-
@@ -140,11 +143,13 @@ current_package(Package, Options) :-
 
 
 package_table(Packages, Options) -->
+	html_requires(css('cpack.css')),
 	html(table(class(block),
 		   [ tr([ th('Name'),
 			  th('Title'),
 			  th('Type'),
-			  th('Submitter')
+			  th('Submitter'),
+			  th('Status')
 			])
 		   | \package_rows(Packages, 1, Options)
 		   ])).
@@ -158,8 +163,20 @@ package_row(Package, _Options) -->
 	html([ td(\cpack_link(Package)),
 	       td(\cpack_prop(Package, dcterms:title)),
 	       td(\cpack_prop(Package, rdf:type)),
-	       td(\cpack_prop(Package, cpack:submittedBy))
+	       td(\cpack_prop(Package, cpack:submittedBy)),
+	       td(class(status), \cpack_satisfied(Package))
 	     ]).
+
+cpack_satisfied(Package) -->
+	{ cpack_not_satisfied(Package, _Reason),
+	  http_absolute_location(icons('webdev-alert-icon.png'), IMG, [])
+	}, !,
+	html(img([class(status), alt('Not satisfied'), src(IMG)])).
+cpack_satisfied(_) -->
+	{ http_absolute_location(icons('webdev-ok-icon.png'), IMG, [])
+	}, !,
+	html(img([class(status), alt('OK'), src(IMG)])).
+
 
 update_all_link(Options) -->
 	{ option(update_all_link(true), Options),
