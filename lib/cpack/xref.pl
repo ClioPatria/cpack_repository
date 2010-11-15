@@ -212,8 +212,17 @@ cannonical_pi(PI, PI).
 %
 %		library(X) --> cpacks(lib/X)
 
-search_file(Spec, File) :-
+search_file(Spec, File) :-	% find applications(...), icons(...), ...
 	path_rule(Spec, cpacks(Segments)),
+	path_segments_atom(Segments, InPack),
+	(   Target = InPack
+	;   user:prolog_file_type(Ext, prolog),
+	    file_name_extension(InPack, Ext, Target)
+	),
+	once(rdf_has(File, cpack:path, literal(Target))).
+search_file(Spec, File) :-	% find Package(...)
+	rdf_has(_Pack, cpack:packageName, literal(PackName)),
+	Spec =.. [PackName,Segments],
 	path_segments_atom(Segments, InPack),
 	(   Target = InPack
 	;   user:prolog_file_type(Ext, prolog),
