@@ -178,6 +178,7 @@ file_not_satisfied_due(File, predicate_not_found(PI)) :-
 	LPI = literal(PI),
 	rdf_has(File, cpack:requiresPredicate, LPI),
 	\+ file_imports_pi_from(File, _, PI),
+	\+ file_calls_public_from(File, _, PI),
 	\+ other_source(PI).
 
 other_source(API) :-
@@ -209,4 +210,25 @@ file_imports_pi_from(File, UsedFile, PI) :-
 	;   UsedFile = Uses
 	),
 	rdf_has(UsedFile, cpack:exportsPredicate, literal(PI)).
+
+%%	file_calls_public_from(+File, -UsedFile, +PI) is semidet.
+%
+%	True if PI is a module-qualified  term   that  can  be called in
+%	UsedFile, that is imported from File.
+
+file_calls_public_from(File, UsedFile, PI) :-
+	(   rdf_has(UsedFile, cpack:publicPredicate, literal(PI))
+	->  true
+	;   atom_to_term(PI, M:PPI, []),
+	    rdf_has(UsedFile, cpack:module, literal(M)),
+	    format(atom(Plain), '~q', [PPI]),
+	    rdf_has(UsedFile, cpack:exportsPredicate, literal(Plain))
+	),
+	(   rdf_has(File, cpack:usesFile, UsedFile)
+	->  true
+	;   rdf_has(UsedFile, cpack:resolves, Uses),
+	    rdf_has(File, cpack:usesFile, Uses)
+	), !.
+
+
 
