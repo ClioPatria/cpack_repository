@@ -108,6 +108,9 @@ file_property(File, cpack:requiresPredicate, literal(Pred)) :-
 	xref_called(File, Callable, _),
 	\+ xref_local_defined(File, Callable),
 	head_atom(Callable, Pred).
+file_property(File, cpack:publicPredicate, literal(Pred)) :-
+	xref_defined(File, Callable, public(_Line)),
+	head_atom(Callable, Pred).
 file_property(File, UsesFile, Uses) :-
 	xref_uses_file(File, Spec, Path),
 	(   rdf_is_resource(Path),
@@ -183,18 +186,26 @@ system_file_uri(Path, Root, Class, Graph, URI) :-
 	    rdf_assert(URI, cpack:path, literal(RelPath), Graph),
 	    rdf_assert(URI, cpack:name, literal(FileName), Graph),
 	    rdf_assert(URI, cpack:base, literal(Base), Graph),
-	    (	xref_public_list(Path, _, Module, Public, _Meta, -)
+	    (	xref_public_list(Path, _, Module, Exports, Public, _Meta, -)
 	    ->	rdf_assert(URI, cpack:module, literal(Module), Graph),
-		forall(member(PI, Public),
+		forall(member(PI, Exports),
 		       (   cannonical_pi(PI, CannPI),
 		           format(atom(Id), '~q', [CannPI]),
 			   rdf_assert(URI, cpack:exportsPredicate,
+				      literal(Id), Graph)
+		       )),
+		forall(member(PI, Public),
+		       (   cannonical_pi(Module:PI, CannPI),
+		           format(atom(Id), '~q', [CannPI]),
+			   rdf_assert(URI, cpack:publicPredicate,
 				      literal(Id), Graph)
 		       ))
 	    ;	true
 	    )
 	).
 
+cannonical_pi(M:PI, M:CannPi) :- !,
+	cannonical_pi(PI, CannPi).
 cannonical_pi(Name//DCGArity, Name/Arity) :- !,
 	Arity is DCGArity + 2.
 cannonical_pi(PI, PI).
