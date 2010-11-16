@@ -350,17 +350,19 @@ not_satisfied_reason(Term) -->
 
 file_problem(double_import(PI, File1, File2)) -->
 	html([ 'Both ', \cpack_link(File1), ' and ', \cpack_link(File2),
-	       ' export ', \cpack_link(PI)
+	       ' export ', \pi(PI)
 	     ]).
 file_problem(file_not_found(FileRef)) -->
 	html([ 'File reference ', \cpack_link(FileRef), ' cannot be resolved'
 	     ]).
 file_problem(predicate_not_found(PI)) -->
-	html([ 'Predicate ', \cpack_link(PI), ' cannot be resolved'
+	html([ 'Predicate ', \pi(PI), ' cannot be resolved'
 	     ]).
 file_problem(Term) -->
 	html('Unknown reason: ~q'-Term).
 
+pi(PI) -->
+	html(span(class(pi), PI)).
 
 %%	cpack_status_icon(+Package)// is det.
 %

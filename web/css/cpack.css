@@ -130,3 +130,8 @@ div.diffstyle
 { text-align: right;
   font-size: smaller;
 }
+
+div.cpack span.pi
+{ font-weight: bold;
+  font-size: 90%;
+}
