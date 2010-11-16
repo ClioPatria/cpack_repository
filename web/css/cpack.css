@@ -6,6 +6,10 @@ div.cpack td.status img
 { height: 1.3em;
 }
 
+div.cpack h2 span.status
+{ vertical-align: text-top;
+  margin-top: -0.3em;
+}
 
 div.cpack table.infobox
 { font-size: 80%;

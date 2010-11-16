@@ -30,11 +30,13 @@
 
 :- module(c_cpack,
 	  [ cpack//2,			% +Pack, +Options
+	    cpack_status_icon//1,	% +Pack
 	    cpack_link//1,		% +Resource
 	    cpack_prop//2,		% +Resource, +Prop
 	    commit_info//3		% +Record, +Body, +Options
 	  ]).
 :- include(bundle(html_page)).
+:- use_module(library(http/http_path)).
 :- use_module(library(http/dcg_basics)).
 :- use_module(library(cpack/repository)).
 :- use_module(library(cpack/dependency)).
@@ -77,12 +79,16 @@ cliopatria:list_resource(Pack) -->
 %	Display information about Pack.
 
 cpack(Pack, _Options) -->
-	{ rdf_has(Pack, cpack:name, literal(Name))
+	{ rdf_has(Pack, cpack:name, literal(Name)),
+	  package_status(Pack, Problems)
 	},
 	html_requires(css('cpack.css')),
 	html(div(class(cpack),
-		 [ h2(['Package "', Name, '" -- ',
-		       \cpack_prop(Pack, dcterms:title)]),
+		 [ h2([ 'Package "', Name, '" -- ',
+			\cpack_prop(Pack, dcterms:title),
+			span([class(status), style('float:right')],
+			     \cpack_status_icon(Pack, Problems))
+		      ]),
 		   table(class(infobox),
 			 [ \p_row(Pack, rdf:type),
 			   \p_row(Pack, cpack:author),
@@ -96,6 +102,7 @@ cpack(Pack, _Options) -->
 		   div(class(description),
 		       \cpack_prop(Pack, cpack:description)),
 		   br(clear(all)),
+		   \cpack_issues(Pack, Problems),
 		   \git_shortlog(Pack, [limit(5)]),
 		   h3('Files in package'),
 		   \files_in_pack(Pack),
@@ -295,6 +302,91 @@ same_first_path([H|T], Dir, [HS|TS], Rest) :-
 	first_path(H, HS, Dir), !,
 	same_first_path(T, Dir, TS, Rest).
 same_first_path(Rest, _, [], Rest).
+
+
+		 /*******************************
+		 *     STATUS AND CONFLICTS	*
+		 *******************************/
+
+%%	cpack_issues(+Pack, +Problems)
+
+cpack_issues(_, []) --> !.
+cpack_issues(Pack, Problems) -->
+	html([ h3('Issues with this package'),
+	       \list(Problems, problem(Pack), ul)
+	     ]).
+
+problem(_Pack, conflict(Pack2, Why)) --> !,
+	html([ span(class(msg_warning),
+		    [ 'Conflict with package ', \cpack_link(Pack2) ]),
+	       \list(Why, conflict_reason, ul)
+	     ]).
+problem(_Pack, not_satified(Why)) --> !,
+	html([ span(class(msg_warning),
+		    [ 'The following requirements cannot be satisfied' ]),
+	       \list(Why, not_satisfied_reason, ul)
+	     ]).
+
+conflict_reason(same_module(M, File1, File2)) -->
+	html([ 'Module ', M, ' is provided by ', \cpack_link(File1), ' and ',
+	       \cpack_link(File2)
+	     ]).
+conflict_reason(same_file(Path, File1, File2)) -->
+	html([ 'Path alias ', Path, ' can be resolved by the files ',
+	       \cpack_link(File1), ' and ', \cpack_link(File2)
+	     ]).
+conflict_reason(Term) -->
+	html('Unknown reason: ~q'-Term).
+
+not_satisfied_reason(no_token(Token)) --> !,
+	html(['No package provides the required token ', \cpack_link(Token)]).
+not_satisfied_reason(file(File, Problems)) --> !,
+	html([ 'The following dependencies of ', \cpack_link(File, cpack:path),
+	       ' cannot be satisfied',
+	       \list(Problems, file_problem, ul)
+	     ]).
+not_satisfied_reason(Term) -->
+	html('Unknown reason: ~q'-Term).
+
+file_problem(double_import(PI, File1, File2)) -->
+	html([ 'Both ', \cpack_link(File1), ' and ', \cpack_link(File2),
+	       ' export ', \cpack_link(PI)
+	     ]).
+file_problem(file_not_found(FileRef)) -->
+	html([ 'File reference ', \cpack_link(FileRef), ' cannot be resolved'
+	     ]).
+file_problem(predicate_not_found(PI)) -->
+	html([ 'Predicate ', \cpack_link(PI), ' cannot be resolved'
+	     ]).
+file_problem(Term) -->
+	html('Unknown reason: ~q'-Term).
+
+
+%%	cpack_status_icon(+Package)// is det.
+%
+%	Show an icon for the sanity-state of the package
+
+cpack_status_icon(Package) -->
+	{ package_status(Package, Problems) },
+	cpack_status_icon(Package, Problems).
+
+cpack_status_icon(_Package, []) -->
+	{ http_absolute_location(icons('webdev-ok-icon.png'), IMG, [])
+	}, !,
+	html(img([class(status), alt('OK'), src(IMG)])).
+cpack_status_icon(_Package, _Problems) -->
+	{ http_absolute_location(icons('webdev-alert-icon.png'), IMG, [])
+	}, !,
+	html(img([class(status), alt('Not satisfied'), src(IMG)])).
+
+
+package_status(Pack, Problems) :-
+	findall(Problem, package_problem(Pack, Problem), Problems).
+
+package_problem(Pack, conflict(Pack2, Why)) :-
+	cpack_conflicts(Pack, Pack2, Why).
+package_problem(Pack, not_satified(What)) :-
+	cpack_not_satisfied(Pack, What).
 
 
 

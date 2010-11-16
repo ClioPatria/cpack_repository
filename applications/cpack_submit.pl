@@ -37,7 +37,6 @@
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(semweb/rdf_label)).
 :- use_module(user(user_db)).
-:- use_module(library(http/http_path)).
 :- use_module(library(cpack/repository)).
 :- use_module(library(cpack/dependency)).
 :- use_module(components(messages)).
@@ -164,19 +163,8 @@ package_row(Package, _Options) -->
 	       td(\cpack_prop(Package, dcterms:title)),
 	       td(\cpack_prop(Package, rdf:type)),
 	       td(\cpack_prop(Package, cpack:submittedBy)),
-	       td(class(status), \cpack_satisfied(Package))
+	       td(class(status), \cpack_status_icon(Package))
 	     ]).
-
-cpack_satisfied(Package) -->
-	{ cpack_not_satisfied(Package, _Reason),
-	  http_absolute_location(icons('webdev-alert-icon.png'), IMG, [])
-	}, !,
-	html(img([class(status), alt('Not satisfied'), src(IMG)])).
-cpack_satisfied(_) -->
-	{ http_absolute_location(icons('webdev-ok-icon.png'), IMG, [])
-	}, !,
-	html(img([class(status), alt('OK'), src(IMG)])).
-
 
 update_all_link(Options) -->
 	{ option(update_all_link(true), Options),
