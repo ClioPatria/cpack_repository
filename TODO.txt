@@ -1,0 +1,6 @@
+---+ Thoughts and issues
+
+Status:
+
+	* Allow owner/user to overrule problems (notably undefined
+	predicates).
