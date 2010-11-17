@@ -46,6 +46,7 @@
 %	Show a package and its dependencies
 
 cpack_dependency_graph(URI, _Options) -->
+	{ related(URI, _, _) }, !,
 	html([ h3('Dependency graph'),
 	       \graphviz_graph(dependency_graph(URI),
 			       [ object_attributes([width('100%')]),
@@ -55,6 +56,8 @@ cpack_dependency_graph(URI, _Options) -->
 				 shape_hook(shape(URI))
 			       ])
 	     ]).
+cpack_dependency_graph(_URI, _Options) -->
+	[].
 
 
 %%	shape(+Start, +URI, -Shape) is semidet.

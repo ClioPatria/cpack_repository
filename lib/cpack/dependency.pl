@@ -32,10 +32,13 @@
 	  [ file_used_by_file_in_package/3, % +File, -UsedBy, -Package
 	    cpack_requires/3,		% +Package, -Package, -Why
 	    cpack_conflicts/3,		% +Package, -Package, -Why
+	    cpack_list/2,		% +Package, -ListOfImplied
 	    cpack_not_satisfied/2,	% +Package, -Reasons
 	    file_not_satisfied/2,	% +File, -Reasons
 	    file_imports_from/3		% +File, -Imports, -From
 	  ]).
+:- use_module(library(assoc)).
+:- use_module(library(ugraphs)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
 :- use_module(repository).
@@ -51,6 +54,7 @@ high-level dependencies between objects. Currently, we keep track of:
   * Conflict reasons
     - Packages holding files that provide the same module
     - Packages holding files with the same path
+  * Satisfied status
 
 @tbd	Extend reasoning
 */
@@ -124,6 +128,54 @@ cpack_conflicts_by(Package, Conflict, same_file(Path,File1,File2)) :-
 	LPath = literal(Path),
 	rdf_has(Package, cpack:in_file, File1),
 	rdf_has(Conflict, cpack:in_file, File2).
+
+
+		 /*******************************
+		 *	      GRAPH		*
+		 *******************************/
+
+%%	cpack_list(+Pack, -PackList) is det.
+%
+%	PackList is a list of all packages  that need to be installed to
+%	get Pack working. This list is ensured to contain Pack.
+%
+%	@tbd	Toplogical sorting may not be possible.  As ordering is
+%		not always necessary, we should try to relax
+%		dependencies if a topological sort is not possible due
+%		to cycles.  There are two heuristics here.  First of
+%		all, explicit (token) dependencies may be removed and
+%		second, libraries must be loaded before applications.
+
+cpack_list(Pack, Packs) :-
+	dependency_ugraph(Pack, Ugraph),
+	(   top_sort(Ugraph, Packs)
+	->  true
+	;   domain_error(non_cyclic_dependency_structure, Ugraph)
+	).
+
+
+%%	dependency_ugraph(+Pack, -Ugraph) is det.
+%
+%	Create a full dependency graph for pack as a ugraph.
+
+dependency_ugraph(Pack, Ugraph) :-
+	empty_assoc(Visited),
+	dependency_ugraph([Pack], Visited, Ugraph).
+
+dependency_ugraph([], _, []).
+dependency_ugraph([H|T], Visited, Graph) :-
+	(   get_assoc(H, Visited, _)
+	->  dependency_ugraph(T, Visited, Graph)
+	;   findall(Required, cpack_requires(H, Required, _), RList),
+	    Graph = [H-RList|More],
+	    put_assoc(H, Visited, true, Visited2),
+	    dependency_ugraph(T, Visited2, More)
+	).
+
+
+		 /*******************************
+		 *	     SATISFIED		*
+		 *******************************/
 
 %%	cpack_not_satisfied(+Package, -WhyNot) is semidet.
 %

@@ -96,7 +96,8 @@ cpack(Pack, _Options) -->
 			   \p_row(Pack, cpack:submittedDate),
 			   \p_row(Pack, cpack:requires),
 			   \p_row(Pack, cpack:clonedRepository),
-			   \p_row(Pack, cpack:mirrorRepository)
+			   \p_row(Pack, cpack:mirrorRepository),
+			   \install_url_row(Pack)
 			 ]),
 		   br([class('after-ptable')]),
 		   div(class(description),
@@ -108,6 +109,16 @@ cpack(Pack, _Options) -->
 		   \files_in_pack(Pack),
 		   \cpack_dependency_graph(Pack, [])
 		 ])).
+
+
+%%	install_url_row(+Pack)//
+
+install_url_row(Pack) -->
+	{ rdf_has(Pack, cpack:packageName, literal(Name)),
+	  cpack_uri(pack, Name, URL)
+	},
+	html(tr([th('Install URL:'), td(a(href(URL), URL))])).
+
 
 
 %%	git_shortlog(+Pack, +Options)//

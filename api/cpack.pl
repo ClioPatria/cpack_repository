@@ -31,6 +31,10 @@
 :- module(api_cpack,
 	  [
 	  ]).
+:- use_module(library(cpack/dependency)).
+:- use_module(library(semweb/rdf_db)).
+:- use_module(library(semweb/rdf_label)).
+:- use_module(library(http/http_dispatch)).
 
 /** <module> CPACK API for installing packages
 
@@ -61,5 +65,74 @@ To *discover* a package, we will search for
     * Exported predicates (exact)
 */
 
+:- http_handler(root('cpack/'),	cpack_install_data, [prefix]).
+
+%%	cpack_install_data(+Request)
+%
+%	Return installation info for installing Pack.  The data is
+%	returned as a Prolog term.
+
+cpack_install_data(Request) :-
+	memberchk(path_info(PackName), Request),
+	(   rdf_has(Pack, cpack:packageName, literal(PackName))
+	->  pack_install_data(Pack, Data),
+	    format('Content-type: application/x-prolog~n~n'),
+	    format('% Installation data for CPACK "~w"~n~n', [PackName]),
+	    format('pack(~q, ~q).~n', [PackName, Data])
+	;   format('Content-type: application/x-prolog~n~n'),
+	    format('% Installation data for CPACK "~w"~n~n', [PackName]),
+	    format('no_pack(~q).~n', [PackName])
+	).
 
 
+%%	pack_install_data(+Pack, -Data) is det.
+%
+%	Provides the information to install  Pack.   Data  is  a list of
+%	packages. Each element  is  a   term  pack(Name,  Options).  The
+%	packages are topologically sorted on their dependency.
+%
+%	The  option  list  for  each  package  may  hold  the  following
+%	information:
+%
+%	    * title(Title)
+%	    * license(License)
+%	    * pack_repository(git(URL,Options))
+%	    * author_repository(git(URL,Options))
+%	    Options include:
+%	        - branch(Branch)
+%	        - hash(Hash)
+%	        - tag(Tag)
+%	    * files(ListOfFile)
+%	    Each file is a term file(Path, Options), where options is
+%	        - module(Module)
+
+pack_install_data(Pack, Data) :-
+	cpack_list(Pack, List),
+	maplist(pack_info, List, Data).
+
+pack_info(Pack, pack(Name, Options)) :-
+	rdf_has(Pack, cpack:packageName, literal(Name)),
+	findall(O, pack_option(Pack, O), Options).
+
+pack_option(Pack, title(Title)) :-
+	rdf_has(Pack, dcterms:title, Literal),
+	literal_text(Literal, Title).
+pack_option(Pack, pack_repository(Git)) :-
+	rdf_has(Pack, cpack:mirrorRepository, Mirror),
+	rdf_git_repo(Mirror, Git).
+pack_option(Pack, author_repository(Git)) :-
+	rdf_has(Pack, cpack:clonedRepository, Mirror),
+	rdf_git_repo(Mirror, Git).
+pack_option(Pack, files(FileData)) :-
+	findall(F, rdf_has(F, cpack:inPack, Pack), Files),
+	maplist(file_info, Files, FileData).
+
+rdf_git_repo(URI, git(GitURL,Options)) :-
+	rdf_has(URI, cpack:gitURL, GitURL),
+	findall(O, repo_info(URI,O), Options).
+
+repo_info(URI, branch(Branch)) :-
+	rdf_has(URI, cpack:branch, literal(Branch)).
+
+file_info(URI, module(M)) :-
+	rdf_has(URI, cpack:module, literal(M)).

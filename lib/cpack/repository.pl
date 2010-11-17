@@ -41,6 +41,7 @@
 :- use_module(library(lists)).
 :- use_module(library(record)).
 :- use_module(library(git)).
+:- use_module(library(uri)).
 :- use_module(library(settings)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_turtle)).
@@ -296,14 +297,22 @@ cpack_uri(Type, Name, URI) :-
 	http_current_host(Request, Host, Port,
 			  [ global(true)
 			  ]),
-	format(atom(URI), 'http://~w:~w/cpack/~w~w',
-	       [ Host, Port, Root, Name ]).
+	uri_authority_data(host, AD, Host),
+	uri_authority_data(port, AD, Port),
+	uri_authority_components(Authority, AD),
+	uri_data(scheme, Data, http),
+	uri_data(authority, Data, Authority),
+	uri_data(path, Data, Root),
+	uri_components(Start, Data),
+	atom_concat(Start, Name, URI).
 
-type_root(package,    'packs/').
-type_root(file_ref,   'file_ref/').
-type_root(graph,      'graph/').
-type_root(prolog,     'prolog/').
-type_root(cliopatria, 'cliopatria/').
+
+type_root(package,    '/packs/').
+type_root(pack,	      '/cpack/').	% Sync with api(cpack)!
+type_root(file_ref,   '/file_ref/').
+type_root(graph,      '/graph/').
+type_root(prolog,     '/prolog/').
+type_root(cliopatria, '/cliopatria/').
 
 package_graph(Package, Graph) :-
 	cpack_uri(package, Package, Graph).

@@ -1,1 +1,2 @@
 config(cpack_repository, link).
+config(cpack_server, link).
