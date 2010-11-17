@@ -149,10 +149,25 @@ cpack_conflicts_by(Package, Conflict, same_file(Path,File1,File2)) :-
 cpack_list(Pack, Packs) :-
 	dependency_ugraph(Pack, Ugraph),
 	(   top_sort(Ugraph, Packs)
-	->  true
+	->  check_conflicts(Packs),
+	    check_satisfied(Packs)
 	;   domain_error(non_cyclic_dependency_structure, Ugraph)
 	).
 
+check_conflicts(Packs) :-
+	append(_,[P1|Rest], Packs),
+	cpack_conflicts(P1, Conflict, Reasons),
+	member(Conflict, Rest), !,
+	throw(error(cpack_error(conflict(P1, Conflict, Reasons)), _)).
+check_conflicts(_).
+
+check_satisfied(Packs) :-
+	maplist(cpack_satisfied, Packs).
+
+cpack_satisfied(Pack) :-
+	cpack_not_satisfied(Pack, Reasons), !,
+	throw(error(cpack_error(not_satisfied(Pack, Reasons)), _)).
+cpack_satisfied(_).
 
 %%	dependency_ugraph(+Pack, -Ugraph) is det.
 %
@@ -169,7 +184,8 @@ dependency_ugraph([H|T], Visited, Graph) :-
 	;   findall(Required, cpack_requires(H, Required, _), RList),
 	    Graph = [H-RList|More],
 	    put_assoc(H, Visited, true, Visited2),
-	    dependency_ugraph(T, Visited2, More)
+	    append(RList, T, Agenda),
+	    dependency_ugraph(Agenda, Visited2, More)
 	).
 
 

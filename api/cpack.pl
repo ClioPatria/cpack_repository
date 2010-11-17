@@ -75,20 +75,41 @@ To *discover* a package, we will search for
 cpack_install_data(Request) :-
 	memberchk(path_info(PackName), Request),
 	(   rdf_has(Pack, cpack:packageName, literal(PackName))
-	->  pack_install_data(Pack, Data),
-	    format('Content-type: application/x-prolog~n~n'),
-	    format('% Installation data for CPACK "~w"~n~n', [PackName]),
-	    format('pack(~q, ~q).~n', [PackName, Data])
-	;   format('Content-type: application/x-prolog~n~n'),
-	    format('% Installation data for CPACK "~w"~n~n', [PackName]),
-	    format('no_pack(~q).~n', [PackName])
+	->  (   catch(pack_install_data(Pack, Data), E, true)
+	    ->  (   nonvar(E)
+		->  client_error(E, Error),
+		    reply(PackName, error(Error))
+		;   reply(PackName, cpack(PackName, Data))
+		)
+	    ;	reply(PackName, fail)
+	    )
+	;   reply(PackName, no_pack(PackName))
 	).
+
+reply(PackName, Data) :-
+	format('Content-type: application/x-prolog~n~n'),
+	format('% Installation data for CPACK "~w"~n~n', [PackName]),
+	format('~q.~n', [Data]).
+
+client_error(URL, Name) :-
+	rdf_is_resource(URL),
+	(   rdf_has(URL, cpack:path, literal(Name))
+	->  true
+	;   rdf_has(URL, cpack:name, literal(Name))
+	), !.
+client_error(literal(Text), Text) :- !.
+client_error(Term0, Term) :-
+	Term0 =.. [H|List0],
+	maplist(client_error, List0, List),
+	Term =.. [H|List].
+
+
 
 
 %%	pack_install_data(+Pack, -Data) is det.
 %
 %	Provides the information to install  Pack.   Data  is  a list of
-%	packages. Each element  is  a   term  pack(Name,  Options).  The
+%	packages. Each element  is  a   term  cpack(Name,  Options). The
 %	packages are topologically sorted on their dependency.
 %
 %	The  option  list  for  each  package  may  hold  the  following
@@ -110,7 +131,7 @@ pack_install_data(Pack, Data) :-
 	cpack_list(Pack, List),
 	maplist(pack_info, List, Data).
 
-pack_info(Pack, pack(Name, Options)) :-
+pack_info(Pack, cpack(Name, Options)) :-
 	rdf_has(Pack, cpack:packageName, literal(Name)),
 	findall(O, pack_option(Pack, O), Options).
 

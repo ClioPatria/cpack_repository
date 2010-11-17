@@ -350,7 +350,8 @@ conflict_reason(Term) -->
 	html('Unknown reason: ~q'-Term).
 
 not_satisfied_reason(no_token(Token)) --> !,
-	html(['No package provides the required token ', \cpack_link(Token)]).
+	html(['No package provides the required token ',
+	      a(span(class(token), \cpack_link(Token)))]).
 not_satisfied_reason(file(File, Problems)) --> !,
 	html([ 'The following dependencies of ', \cpack_link(File, cpack:path),
 	       ' cannot be satisfied',

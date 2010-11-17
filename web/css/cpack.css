@@ -131,7 +131,7 @@ div.diffstyle
   font-size: smaller;
 }
 
-div.cpack span.pi
+div.cpack span.pi,span.token
 { font-weight: bold;
   font-size: 90%;
 }
