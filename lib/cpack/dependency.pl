@@ -148,8 +148,9 @@ cpack_conflicts_by(Package, Conflict, same_file(Path,File1,File2)) :-
 
 cpack_list(Pack, Packs) :-
 	dependency_ugraph(Pack, Ugraph),
-	(   top_sort(Ugraph, Packs)
-	->  check_conflicts(Packs),
+	(   top_sort(Ugraph, RPacks)
+	->  reverse(RPacks, Packs),
+	    check_conflicts(Packs),
 	    check_satisfied(Packs)
 	;   domain_error(non_cyclic_dependency_structure, Ugraph)
 	).
