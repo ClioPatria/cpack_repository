@@ -449,7 +449,8 @@ cpack_file(FileURL, _Options) -->
 		 [ h2(['File "', Path, '"', \download(FileURL)]),
 		   table(class(infobox),
 			 [ \p_row(FileURL, cpack:inPack),
-			   \p_row(FileURL, cpack:module)
+			   \p_row(FileURL, cpack:module),
+			   \p_row(FileURL, cpack:size)
 			 ]),
 		   br(clear(all)),
 		   \git_shortlog(Pack, [limit(5), path(Path)]),
