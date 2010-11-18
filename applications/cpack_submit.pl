@@ -120,7 +120,11 @@ cpack_resubmit(Request) :-
 	http_parameters(Request,
 			[ pack(Pack,
 			       [ description('URI of the CPACK to update')
-			       ])
+			       ]),
+			  return_to(ReturnTo,
+				    [ optional(true),
+				      description('Return link')
+				    ])
 			]),
 	rdf_has(Pack, cpack:clonedRepository, GitRepo),
 	rdf_has(GitRepo, cpack:gitURL, GitURL),
@@ -130,10 +134,14 @@ cpack_resubmit(Request) :-
 	),
 	authorized(write(cpack, GitURL)),
 	user_property(User, url(UserURL)),
+	(   var(ReturnTo)
+	->  MsgOptions = []
+	;   MsgOptions = [return_to(ReturnTo)]
+	),
 	call_showing_messages(cpack_add_repository(UserURL, GitURL,
 						   [ branch(Branch)
 						   ]),
-			      []).
+			      MsgOptions).
 
 
 %%	cpack_list_packages(+Request) is det.

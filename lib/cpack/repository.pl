@@ -142,7 +142,8 @@ update_allowed(_, Package, _) :-
 update_metadata(BareGitPath, Graph, Options) :-
 	rdf_retractall(_,_,_,Graph),
 	add_files(BareGitPath, Graph, Options),
-	load_meta_data(BareGitPath, Graph, Options),
+	catch(load_meta_data(BareGitPath, Graph, Options), E,
+	      print_message(error, E)),
 	update_decription(BareGitPath, Graph),
 	add_timestamp(Graph),
 	(   option(cloned(ClonedURL), Options)
@@ -174,12 +175,13 @@ add_timestamp(Graph) :-
 		   literal(type(xsd:dateTime, DateTime)), Graph).
 
 update_decription(BareGitPath, Graph) :-
-	rdf_has(Graph, dcterms:title, Literal),
+	rdf_has(Graph, dcterms:title, Literal), !,
 	literal_text(Literal, Title),
 	directory_file_path(BareGitPath, description, DescFile),
 	setup_call_cleanup(open(DescFile, write, Out),
 			   format(Out, '~w~n', [Title]),
 			   close(Out)).
+update_decription(_, _).
 
 %%	git_export(+BareGitPath, -MirroredURL) is det.
 %
@@ -224,7 +226,7 @@ read_to_atom(Hash, In) :-
 
 add_files(BareGitPath, Graph, Options) :-
 	option(branch(Branch), Options, master),
-	git_process_output(['ls-tree', '-r', '--name-only', Branch],
+	git_process_output(['ls-tree', '-lr', Branch],
 			   read_files(Graph),
 			   [directory(BareGitPath)]).
 
@@ -234,7 +236,8 @@ read_files(Graph, In) :-
 
 read_files(end_of_file, _, _) :- !.
 read_files(Line, Graph, In) :-
-	atom_codes(FileName, Line),
+	phrase(file_l(_Mode, _Type, _Hash, Size, FileName), Line),
+	atom_number(SizeAtom, Size),
 	file_base_name(FileName, BaseName),
 	file_base(FileName , BaseID),
 	file_type(BaseName, Class),
@@ -242,6 +245,7 @@ read_files(Line, Graph, In) :-
 	rdf_assert(File, cpack:path, literal(FileName), Graph),
 	rdf_assert(File, cpack:name, literal(BaseName), Graph),
 	rdf_assert(File, cpack:base, literal(BaseID), Graph),
+	rdf_assert(File, cpack:size, literal(type(xsd:integer, SizeAtom)), Graph),
 	rdf_assert(File, cpack:inPack, Graph, Graph),
 	rdf_assert(File, rdf:type, Class, Graph),
 	read_line_to_codes(In, Line2),
@@ -250,6 +254,18 @@ read_files(Line, Graph, In) :-
 file_base(Path, Base) :-
 	file_base_name(Path, File),
 	file_name_extension(Base, _Ext, File).
+
+file_l(Mode, Type, Hash, Size, Name) -->
+	string_without(" ", MCodes), blanks,
+	string_without(" ", TCodes), blanks,
+	string_without(" ", HCodes), blanks,
+	integer(Size), blanks,
+	string_without(" \n", NCodes), blanks,
+	{ number_codes(Mode, [0'0, 0'o|MCodes]),
+	  atom_codes(Type, TCodes),
+	  atom_codes(Hash, HCodes),
+	  atom_codes(Name, NCodes)
+	}.
 
 
 :- rdf_meta

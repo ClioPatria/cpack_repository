@@ -415,7 +415,13 @@ cpack_update_icon(Pack) -->
 	  user_property(User, url(UserURI)),
 	  rdf_has(Pack, cpack:submittedBy, UserURI),
 	  http_absolute_location(icons('webdev-arrow-up-icon.png'), IMG, []),
-	  http_link_to_id(cpack_resubmit, [pack(Pack)], Resubmit)
+	  http_current_request(Request),
+	  memberchk(request_uri(ReturnTo), Request),
+	  http_link_to_id(cpack_resubmit,
+			  [ pack(Pack),
+			    return_to(ReturnTo)
+			  ],
+			  Resubmit)
 	},
 	html(a(href(Resubmit),
 	       img([ class(update),
