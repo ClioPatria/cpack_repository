@@ -273,8 +273,22 @@ files_in_pack(Pack) -->
 	{ findall(File, rdf_has(File, cpack:inPack, Pack), Files),
 	  files_to_tree(Files, Trees)
 	},
+	pack_size(Files),
 	html(ul(class(file_hierarchy),
 		\dir_nodes(Trees))).
+
+pack_size(Files) -->
+	{ maplist(cpack_file_size, Files, Sizes),
+	  length(Files, Count),
+	  sumlist(Sizes, Total)
+	},
+	html(p(['Pack contains ', \n('~D', Count), ' files holding a total of ',
+		\n(human, Total), 'bytes.'])).
+
+cpack_file_size(File, Size) :-
+	rdf_has(File, cpack:size, Literal),
+	literal_text(Literal, Text),
+	atom_number(Text, Size).
 
 dir_nodes([]) --> [].
 dir_nodes([H|T]) --> dir_node(H), dir_nodes(T).
