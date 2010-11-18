@@ -7,7 +7,7 @@
 	cpack:packageName "cpack_repository" ;
 	dcterms:title "CPACK package repository manager" ;
 	cpack:author [ foaf:name "Jan Wielemaker" ;
-		       foaf:mbox "J.Wielemaker@cs.vu.nl" ;
+		       foaf:mbox <mailto:j.wielemaker@cs.vu.nl> ;
 		     ] ;
 	cpack:primaryRepository
 	    [ a cpack:GitRepository ;

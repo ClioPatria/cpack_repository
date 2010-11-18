@@ -1,6 +1,14 @@
 ---+ Thoughts and issues
 
-Status:
+Wishlist:
 
-	* Allow owner/user to overrule problems (notably undefined
-	predicates).
+  * Allow owner/user to overrule problems (notably undefined
+    predicates).
+  * When updating/eaccepting a package, do some sanity checks
+    first.
+
+Long term:
+  * Rating system
+  * Trust model
+    - By reputation
+    - By code analysis
