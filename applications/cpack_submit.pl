@@ -144,11 +144,12 @@ current_package(Package, Options) :-
 package_table(Packages, Options) -->
 	html_requires(css('cpack.css')),
 	html(table(class(block),
-		   [ tr([ th('Name'),
+		   [ tr([ th('OK?'),
+			  th('Name'),
 			  th('Title'),
 			  th('Type'),
-			  th('Submitter'),
-			  th('Status')
+			  th('Author'),
+			  th('Submitter')
 			])
 		   | \package_rows(Packages, 1, Options)
 		   ])).
@@ -159,11 +160,13 @@ package_rows([H|T], Row, Options) -->
 	package_rows(T, Next, Options).
 
 package_row(Package, _Options) -->
-	html([ td(\cpack_link(Package)),
-	       td(\cpack_prop(Package, dcterms:title)),
-	       td(\cpack_prop(Package, rdf:type)),
-	       td(\cpack_prop(Package, cpack:submittedBy)),
-	       td(class(status), \cpack_status_icon(Package))
+	html([ td(class(status),    \cpack_status_icon(Package)),
+	       td(class(name),      \cpack_link(Package)),
+	       td(class(title),     \cpack_prop(Package, dcterms:title)),
+	       td(class(type),      \cpack_prop(Package, rdf:type)),
+	       td(class(author),
+		  div(\cpack_prop(Package, cpack:author))),
+	       td(class(submitted), \cpack_prop(Package, cpack:submittedBy))
 	     ]).
 
 update_all_link(Options) -->

@@ -1,10 +1,27 @@
-div.cpack td.status
+/* Package overview table */
+
+div.cpack td.status,td.type
 { text-align: center;
+}
+
+div.cpack td.title
+{ font-weight: bold;
+  font-size: 90%;
 }
 
 div.cpack td.status img
 { height: 1.3em;
 }
+
+div.cpack td.author div
+{ width: 12em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* Package page */
 
 div.cpack h2 span.status
 { vertical-align: text-top;
@@ -22,7 +39,7 @@ div.cpack br.after-ptable
   clear:both;
 }
 
-div.cpack th
+div.cpack table.infobox th
 { text-align: right;
 }
 
