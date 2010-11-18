@@ -102,8 +102,7 @@ ul.dir
 }
 
 ul.file_hierarchy li.file
-{ list-style-image: none;
-  list-style-type: none;
+{ list-style-image: url('../icons/file.png');
 }
 
 ul.files li

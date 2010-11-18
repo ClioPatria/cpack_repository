@@ -49,6 +49,7 @@
 :- use_module(library(filesex)).
 :- use_module(library(http/http_wrapper)).
 :- use_module(library(http/http_host)).
+:- use_module(library(http/http_path)).
 :- use_module(library(http/dcg_basics)).
 :- use_module(xref).
 
@@ -305,8 +306,9 @@ rdf_load_git_stream(Graph, Format, In) :-
 %	Create a persistent URI for Identifier of the given Type.
 
 cpack_uri(Type, Name, URI) :-
-	(   type_root(Type, Root)
-	->  true
+	(   type_root(Type, RootSpec)
+	->  http_absolute_location(RootSpec, Root0, []),
+	    ensure_slash(Root0, Root)
 	;   domain_error(uri_type, Type)
 	),
 	http_current_request(Request),
@@ -322,13 +324,18 @@ cpack_uri(Type, Name, URI) :-
 	uri_components(Start, Data),
 	atom_concat(Start, Name, URI).
 
+ensure_slash(Root0, Root) :-
+	(   sub_atom(Root0, _, _, 0, /)
+	->  Root = Root0
+	;   atom_concat(Root0, /, Root)
+	).
 
-type_root(package,    '/packs/').
-type_root(pack,	      '/cpack/').	% Sync with api(cpack)!
-type_root(file_ref,   '/file_ref/').
-type_root(graph,      '/graph/').
-type_root(prolog,     '/prolog/').
-type_root(cliopatria, '/cliopatria/').
+type_root(package,    root(packs)).
+type_root(pack,	      root(cpack)).		% Sync with api(cpack)!
+type_root(file_ref,   root(file_ref)).
+type_root(graph,      root(graph)).
+type_root(prolog,     root(prolog)).
+type_root(cliopatria, root(cliopatria)).
 
 package_graph(Package, Graph) :-
 	cpack_uri(package, Package, Graph).
