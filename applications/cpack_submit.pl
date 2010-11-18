@@ -148,8 +148,7 @@ package_table(Packages, Options) -->
 			  th('Name'),
 			  th('Title'),
 			  th('Type'),
-			  th('Author'),
-			  th('Submitter')
+			  th('Author')
 			])
 		   | \package_rows(Packages, 1, Options)
 		   ])).
@@ -160,13 +159,16 @@ package_rows([H|T], Row, Options) -->
 	package_rows(T, Next, Options).
 
 package_row(Package, _Options) -->
-	html([ td(class(status),    \cpack_status_icon(Package)),
-	       td(class(name),      \cpack_link(Package)),
-	       td(class(title),     \cpack_prop(Package, dcterms:title)),
-	       td(class(type),      \cpack_prop(Package, rdf:type)),
+	html([ td(class(status),
+		  \cpack_status_icon(Package)),
+	       td(class(name),
+		  \cpack_link(Package)),
+	       td(class(title),
+		  div(\cpack_prop(Package, dcterms:title))),
+	       td(class(type),
+		  div(\cpack_prop(Package, rdf:type))),
 	       td(class(author),
-		  div(\cpack_prop(Package, cpack:author))),
-	       td(class(submitted), \cpack_prop(Package, cpack:submittedBy))
+		  div(\cpack_prop(Package, cpack:author)))
 	     ]).
 
 update_all_link(Options) -->
