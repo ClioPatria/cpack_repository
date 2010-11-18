@@ -28,6 +28,14 @@ div.cpack h2 span.status
   margin-top: -0.3em;
 }
 
+div.cpack a img
+{ border: 0px;
+}
+
+div.cpack a img:hover
+{ border: 1px outset;
+}
+
 div.cpack table.infobox
 { font-size: 80%;
   float: right;

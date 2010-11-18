@@ -6,7 +6,9 @@
 <> a cpack:Application ;
 	cpack:packageName "cpack_repository" ;
 	dcterms:title "CPACK package repository manager" ;
-	cpack:author <http://www.swi-prolog.org/cliopatria/user/jan> ;
+	cpack:author [ foaf:name "Jan Wielemaker" ;
+		       foaf:mbox "J.Wielemaker@cs.vu.nl" ;
+		     ] ;
 	cpack:primaryRepository
 	    [ a cpack:GitRepository ;
 	      cpack:gitURL <git://eculture.cs.vu.nl/home/janw/git/ClioPatria/foaf_user.git>

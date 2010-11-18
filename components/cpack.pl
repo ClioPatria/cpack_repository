@@ -36,6 +36,7 @@
 	    commit_info//3		% +Record, +Body, +Options
 	  ]).
 :- include(bundle(html_page)).
+:- use_module(user(user_db)).
 :- use_module(library(http/http_path)).
 :- use_module(library(http/dcg_basics)).
 :- use_module(library(cpack/repository)).
@@ -87,7 +88,9 @@ cpack(Pack, _Options) -->
 		 [ h2([ 'Package "', Name, '" -- ',
 			\cpack_prop(Pack, dcterms:title),
 			span([class(status), style('float:right')],
-			     \cpack_status_icon(Pack, Problems))
+			     [ \cpack_update_icon(Pack),
+			       \cpack_status_icon(Pack, Problems)
+			     ])
 		      ]),
 		   table(class(infobox),
 			 [ \p_row(Pack, rdf:type),
@@ -402,7 +405,25 @@ package_problem(Pack, conflict(Pack2, Why)) :-
 package_problem(Pack, not_satified(What)) :-
 	cpack_not_satisfied(Pack, What).
 
+%%	cpack_update_icon(+Pack)//
+%
+%	Show an icon to update  the  Pack   if  the  current user is the
+%	submitter.
 
+cpack_update_icon(Pack) -->
+	{ logged_on(User),
+	  user_property(User, url(UserURI)),
+	  rdf_has(Pack, cpack:submittedBy, UserURI),
+	  http_absolute_location(icons('webdev-arrow-up-icon.png'), IMG, []),
+	  http_link_to_id(cpack_resubmit, [pack(Pack)], Resubmit)
+	},
+	html(a(href(Resubmit),
+	       img([ class(update),
+		     alt('Update'),
+		     title('Pull a new version'),
+		     src(IMG)
+		   ]))).
+cpack_update_icon(_) --> [].
 
 
 		 /*******************************

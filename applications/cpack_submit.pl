@@ -50,6 +50,7 @@ http:location(cpack_api,  api(cpack),  []).
 :- http_handler(cpack(my_packages),	   cpack_my_packages,	     []).
 :- http_handler(cpack(update_my_packages), cpack_update_my_packages, []).
 :- http_handler(cpack_api(submit),	   cpack_submit,	     []).
+:- http_handler(cpack_api(resubmit),	   cpack_resubmit,	     []).
 :- http_handler(cpack(show_file),	   cpack_show_file,	     []).
 :- http_handler(cpack(git_show),	   git_show,	             []).
 
@@ -99,6 +100,34 @@ cpack_submit(Request) :-
 				   description('Branch in the repo')
 				 ])
 			]),
+	authorized(write(cpack, GitURL)),
+	user_property(User, url(UserURL)),
+	call_showing_messages(cpack_add_repository(UserURL, GitURL,
+						   [ branch(Branch)
+						   ]),
+			      []).
+
+
+%%	cpack_resubmit(+Request)
+%
+%	Resubmit an already submitted package: run   a =|git pull|= from
+%	the cloned repository and recompute the  meta-data. This is very
+%	similar to cpack_submit/1, but the information is extracted from
+%	the existing package resource.
+
+cpack_resubmit(Request) :-
+	logged_on(User),
+	http_parameters(Request,
+			[ pack(Pack,
+			       [ description('URI of the CPACK to update')
+			       ])
+			]),
+	rdf_has(Pack, cpack:clonedRepository, GitRepo),
+	rdf_has(GitRepo, cpack:gitURL, GitURL),
+	(   rdf_has(GitRepo, cpack:branch, literal(Branch))
+	->  true
+	;   Branch = master
+	),
 	authorized(write(cpack, GitURL)),
 	user_property(User, url(UserURL)),
 	call_showing_messages(cpack_add_repository(UserURL, GitURL,
