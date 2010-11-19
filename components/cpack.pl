@@ -779,13 +779,28 @@ list_item([H|T], Goal) -->
 
 cpack_prop(R, P0) -->
 	{ rdf_global_id(P0, P),
-	  rdf_has(R, P, O)
-	}, !,
+	  rdf_has(R, P, O0), !,
+	  representer(O0, O)
+	},
 	(   { rdf_is_literal(O) }
 	->  literal(O)
 	;   cpack_link(O)
 	).
 cpack_prop(_, _) --> [].
+
+%%	representer(+R0, -R) is det.
+%
+%	Find representers among equivalent objects.  This deals with the
+%	author case.
+%
+%	@tbd	Move to an OWL library
+
+representer(R0, R) :-
+	rdf_is_bnode(R0),
+	rdf_has(R0, owl:sameAs, R),
+	\+ rdf_is_bnode(R), !.
+representer(R, R).
+
 
 literal(literal(type(Type, Value))) -->
 	{ rdf_equal(Type, xsd:dateTime),
