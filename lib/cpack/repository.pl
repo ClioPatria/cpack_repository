@@ -316,7 +316,10 @@ cpack_uri(Type, Name, URI) :-
 			  [ global(true)
 			  ]),
 	uri_authority_data(host, AD, Host),
-	uri_authority_data(port, AD, Port),
+	(   Port =:= 80
+	->  true
+	;   uri_authority_data(port, AD, Port)
+	),
 	uri_authority_components(Authority, AD),
 	uri_data(scheme, Data, http),
 	uri_data(authority, Data, Authority),
