@@ -29,7 +29,8 @@
 */
 
 :- module(c_cpack,
-	  [ cpack//2,			% +Pack, +Options
+	  [ package_table//2,		% +Packages, +Options
+	    cpack//2,			% +Pack, +Options
 	    cpack_status_icon//1,	% +Pack
 	    cpack_link//1,		% +Resource
 	    cpack_prop//2,		% +Resource, +Prop
@@ -69,6 +70,42 @@ cliopatria:list_resource(Pack) -->
 cliopatria:list_resource(Pack) -->
 	{ rdfs_individual_of(Pack, cpack:'File') },
 	cpack_file(Pack, []).
+
+
+%%	package_table(Packages, Options)// is det.
+%
+%	Emit a table that describes Packages.   Options is currently not
+%	used.
+
+package_table(Packages, Options) -->
+	html_requires(css('cpack.css')),
+	html(table(class(block),
+		   [ tr([ th('OK?'),
+			  th('Name'),
+			  th('Title'),
+			  th('Type'),
+			  th('Author')
+			])
+		   | \package_rows(Packages, 1, Options)
+		   ])).
+
+package_rows([], _, []) --> [].
+package_rows([H|T], Row, Options) -->
+	odd_even_row(Row, Next, \package_row(H, Options)),
+	package_rows(T, Next, Options).
+
+package_row(Package, _Options) -->
+	html([ td(class(status),
+		  \cpack_status_icon(Package)),
+	       td(class(name),
+		  \cpack_link(Package)),
+	       td(class(title),
+		  div(\cpack_prop(Package, dcterms:title))),
+	       td(class(type),
+		  div(\cpack_prop(Package, rdf:type))),
+	       td(class(author),
+		  div(\cpack_prop(Package, cpack:author)))
+	     ]).
 
 
 		 /*******************************

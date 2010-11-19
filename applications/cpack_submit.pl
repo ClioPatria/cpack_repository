@@ -178,36 +178,6 @@ current_package(Package, Options) :-
 	rdfs_individual_of(Package, cpack:'Package').
 
 
-package_table(Packages, Options) -->
-	html_requires(css('cpack.css')),
-	html(table(class(block),
-		   [ tr([ th('OK?'),
-			  th('Name'),
-			  th('Title'),
-			  th('Type'),
-			  th('Author')
-			])
-		   | \package_rows(Packages, 1, Options)
-		   ])).
-
-package_rows([], _, []) --> [].
-package_rows([H|T], Row, Options) -->
-	odd_even_row(Row, Next, \package_row(H, Options)),
-	package_rows(T, Next, Options).
-
-package_row(Package, _Options) -->
-	html([ td(class(status),
-		  \cpack_status_icon(Package)),
-	       td(class(name),
-		  \cpack_link(Package)),
-	       td(class(title),
-		  div(\cpack_prop(Package, dcterms:title))),
-	       td(class(type),
-		  div(\cpack_prop(Package, rdf:type))),
-	       td(class(author),
-		  div(\cpack_prop(Package, cpack:author)))
-	     ]).
-
 update_all_link(Options) -->
 	{ option(update_all_link(true), Options),
 	  http_link_to_id(cpack_update_my_packages, [], HREF)
