@@ -46,6 +46,7 @@
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_turtle)).
 :- use_module(library(semweb/rdf_label)).
+:- use_module(library(semweb/rdf_foaf)).
 :- use_module(library(filesex)).
 :- use_module(library(http/http_wrapper)).
 :- use_module(library(http/http_host)).
@@ -167,6 +168,7 @@ update_metadata(BareGitPath, Graph, Options) :-
 	    rdf_assert(Mirror, cpack:hash, literal(Hash), Graph)
 	;   true
 	),
+	foaf_merge(_),
 	xref_cpack(Graph).
 
 add_timestamp(Graph) :-
