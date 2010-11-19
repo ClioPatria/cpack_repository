@@ -128,20 +128,21 @@ cpack_resubmit(Request) :-
 			]),
 	rdf_has(Pack, cpack:clonedRepository, GitRepo),
 	rdf_has(GitRepo, cpack:gitURL, GitURL),
-	(   rdf_has(GitRepo, cpack:branch, literal(Branch))
-	->  true
-	;   Branch = master
-	),
 	authorized(write(cpack, GitURL)),
 	user_property(User, url(UserURL)),
 	(   var(ReturnTo)
 	->  MsgOptions = []
 	;   MsgOptions = [return_to(ReturnTo)]
 	),
-	call_showing_messages(cpack_add_repository(UserURL, GitURL,
-						   [ branch(Branch)
-						   ]),
+	findall(O, submit_option(User, Pack, O), RepoOptions),
+	call_showing_messages(cpack_add_repository(UserURL, GitURL, RepoOptions),
 			      MsgOptions).
+
+submit_option(_User, Pack, branch(Branch)) :-
+	rdf_has(Pack, cpack:clonedRepository, GitRepo),
+	rdf_has(GitRepo, cpack:branch, literal(Branch)).
+submit_option(User, _Pack, allowed(true)) :-
+	check_permission(User, admin(cpack)).
 
 
 %%	cpack_list_packages(+Request) is det.
