@@ -66,6 +66,8 @@ To *discover* a package, we will search for
 */
 
 :- http_handler(root('cpack/'),	cpack_install_data, [prefix]).
+:- http_handler(root('schema/cpack'),
+		http_reply_file(cliopatria('rdf/cpack/cpack.ttl'), []), []).
 
 %%	cpack_install_data(+Request)
 %
