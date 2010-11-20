@@ -20,8 +20,7 @@ cliopatria:menu_item(200=cpack/cpack_submit_form,   'Submit pack').
 cliopatria:menu_item(275=current_user/cpack_my_packages, 'My CPACKs') :-
 	logged_on(_).
 
-:- rdf_attach_library(cliopatria(rdf/tool)).
-:- rdf_attach_library(cliopatria(rdf/base)).
+:- rdf_attach_library(cliopatria(rdf)).
 :- rdf_load_library(cpack).
 :- rdf_load_library(owl).
 :- rdf_load_library(dcterms).
