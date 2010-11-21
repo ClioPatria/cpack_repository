@@ -6,8 +6,21 @@ Wishlist:
     predicates).
   * When updating/accepting a package, do some sanity checks
     first.
+  * Removing packages.  Notably, we need to keep track of the
+    config files, so that we can delete them.  We can base that
+    on config.done, which keeps track of where the file comes
+    from.
+  * Removing packages: warn about broken dependencies.  This
+    probably needs a list of why a package is installed: one
+    of
+	- explicit
+	- resolves_for(<pack>)
+  * Signing.  Also make servers sign versions
+  * Clone servers.  Add fetching required clone-info to the
+    API.
 
 Long term:
+
   * Rating system
   * Trust model
     - By reputation
