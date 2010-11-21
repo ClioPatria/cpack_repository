@@ -117,6 +117,7 @@ client_error(Term0, Term) :-
 %	The  option  list  for  each  package  may  hold  the  following
 %	information:
 %
+%	    * url(PackURL)
 %	    * title(Title)
 %	    * license(License)
 %	    * pack_repository(git(URL,Options))
@@ -137,6 +138,7 @@ pack_info(Pack, cpack(Name, Options)) :-
 	rdf_has(Pack, cpack:packageName, literal(Name)),
 	findall(O, pack_option(Pack, O), Options).
 
+pack_option(Pack, url(Pack)).
 pack_option(Pack, title(Title)) :-
 	rdf_has(Pack, dcterms:title, Literal),
 	literal_text(Literal, Title).
