@@ -92,21 +92,8 @@ table.git_shortlog span.ref_name
   padding: 0px 2px;
 }
 
-ul.file_hierarchy
-{ list-style-image: url('../icons/opendir.png');
-}
-
-ul.dir
-{ padding-left: 0.8em;
-  list-style-image: url('../icons/opendir.png');
-}
-
-ul.file_hierarchy li.file
-{ list-style-image: url('../icons/file.png');
-}
-
-ul.files li
-{ font-family: Monospace;
+div.cpack ul.tree
+{ margin-left: 5%;
 }
 
 div.cpack h2 a

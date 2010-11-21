@@ -4,7 +4,7 @@ Wishlist:
 
   * Allow owner/user to overrule problems (notably undefined
     predicates).
-  * When updating/eaccepting a package, do some sanity checks
+  * When updating/accepting a package, do some sanity checks
     first.
 
 Long term:

@@ -311,7 +311,8 @@ files_in_pack(Pack) -->
 	  files_to_tree(Files, Trees)
 	},
 	pack_size(Files),
-	html(ul(class(file_hierarchy),
+	html_requires(css('ul_tree.css')),
+	html(ul(class(tree),
 		\dir_nodes(Trees))).
 
 pack_size(Files) -->
@@ -319,8 +320,12 @@ pack_size(Files) -->
 	  length(Files, Count),
 	  sumlist(Sizes, Total)
 	},
-	html(p(['Pack contains ', \n('~D', Count), ' files holding a total of ',
-		\n(human, Total), 'bytes.'])).
+	html(p([ 'Pack contains ', \n('~D', Count), ' files holding a total of ',
+		 b(\n(human, Total)), 'bytes. ',
+		 'Below is the file hierarchy of of the package. ',
+		 'The tree link to pages that provide history and dependencies ',
+		 'for each file.'
+	       ])).
 
 cpack_file_size(File, Size) :-
 	rdf_has(File, cpack:size, Literal),
