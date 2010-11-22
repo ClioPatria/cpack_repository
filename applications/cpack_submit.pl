@@ -142,7 +142,7 @@ submit_option(_User, Pack, branch(Branch)) :-
 	rdf_has(Pack, cpack:clonedRepository, GitRepo),
 	rdf_has(GitRepo, cpack:branch, literal(Branch)).
 submit_option(User, _Pack, allowed(true)) :-
-	check_permission(User, admin(cpack)).
+	catch(check_permission(User, admin(cpack)), _, fail).
 
 
 %%	cpack_list_packages(+Request) is det.

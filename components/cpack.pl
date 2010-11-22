@@ -99,7 +99,7 @@ current_package(Package, Options) :-
 	rdfs_individual_of(Package, cpack:'Package').
 
 
-package_rows([], _, []) --> [].
+package_rows([], _, _) --> [].
 package_rows([H|T], Row, Options) -->
 	odd_even_row(Row, Next, \package_row(H, Options)),
 	package_rows(T, Next, Options).
