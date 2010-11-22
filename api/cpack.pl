@@ -33,6 +33,7 @@
 	  ]).
 :- use_module(library(cpack/dependency)).
 :- use_module(library(semweb/rdf_db)).
+:- use_module(library(semweb/rdfs)).
 :- use_module(library(semweb/rdf_label)).
 :- use_module(library(http/http_dispatch)).
 
@@ -65,7 +66,8 @@ To *discover* a package, we will search for
     * Exported predicates (exact)
 */
 
-:- http_handler(root('cpack/'),	cpack_install_data, [prefix]).
+:- http_handler(root('cpack/'),	   cpack_install_data, [prefix]).
+:- http_handler(cpack(clone_data), cpack_clone_data,   [prefix]).
 :- http_handler(root('schema/cpack'),
 		http_reply_file(cliopatria('rdf/cpack/cpack.ttl'), []), []).
 
@@ -106,8 +108,6 @@ client_error(Term0, Term) :-
 	Term =.. [H|List].
 
 
-
-
 %%	pack_install_data(+Pack, -Data) is det.
 %
 %	Provides the information to install  Pack.   Data  is  a list of
@@ -132,23 +132,26 @@ client_error(Term0, Term) :-
 
 pack_install_data(Pack, Data) :-
 	cpack_list(Pack, List),
-	maplist(pack_info, List, Data).
+	maplist(pack_info(install), List, Data).
 
-pack_info(Pack, cpack(Name, Options)) :-
+pack_info(Type, Pack, cpack(Name, Options)) :-
 	rdf_has(Pack, cpack:packageName, literal(Name)),
-	findall(O, pack_option(Pack, O), Options).
+	findall(O, ( pack_option(Pack, O, Types),
+		     memberchk(Type, Types)
+		   ),
+		Options).
 
-pack_option(Pack, url(Pack)).
-pack_option(Pack, title(Title)) :-
+pack_option(Pack, url(Pack), [install]).
+pack_option(Pack, title(Title), [install]) :-
 	rdf_has(Pack, dcterms:title, Literal),
 	literal_text(Literal, Title).
-pack_option(Pack, pack_repository(Git)) :-
+pack_option(Pack, pack_repository(Git), [install,clone]) :-
 	rdf_has(Pack, cpack:mirrorRepository, Mirror),
 	rdf_git_repo(Mirror, Git).
-pack_option(Pack, author_repository(Git)) :-
+pack_option(Pack, author_repository(Git), [install,clone]) :-
 	rdf_has(Pack, cpack:clonedRepository, Mirror),
 	rdf_git_repo(Mirror, Git).
-pack_option(Pack, files(FileData)) :-
+pack_option(Pack, files(FileData), [install]) :-
 	findall(F, rdf_has(F, cpack:inPack, Pack), Files),
 	maplist(file_info, Files, FileData).
 
@@ -159,5 +162,28 @@ rdf_git_repo(URI, git(GitURL,Options)) :-
 repo_info(URI, branch(Branch)) :-
 	rdf_has(URI, cpack:branch, literal(Branch)).
 
-file_info(URI, module(M)) :-
+file_info(URI, file(Path, Options)) :-
+	rdf_has(URI, cpack:path, literal(Path)),
+	findall(O, file_option(URI, O), Options).
+
+file_option(URI, module(M)) :-
 	rdf_has(URI, cpack:module, literal(M)).
+
+
+		 /*******************************
+		 *	    CLONE SERVER	*
+		 *******************************/
+
+%%	cpack_clone_data(Request)
+%
+%	Provide data necessary to clone a repository. Currently, we only
+%	clone the repositories. The user that  performs the clone is the
+%	submitter of the cloned data.
+
+cpack_clone_data(_Request) :-
+	findall(Pack, rdfs_individual_of(Pack, cpack:'Package'), Packs),
+	maplist(pack_info(clone), Packs, Data),
+	format('Content-type: application/x-prolog~n~n'),
+	format('% Server clone data~n~n', []),
+	format('~q.~n', [Data]).
+
