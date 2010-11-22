@@ -34,7 +34,8 @@
 	    cpack_status_icon//1,	% +Pack
 	    cpack_link//1,		% +Resource
 	    cpack_prop//2,		% +Resource, +Prop
-	    commit_info//3		% +Record, +Body, +Options
+	    commit_info//3,		% +Record, +Body, +Options
+	    current_package/2		% -Package, +Options
 	  ]).
 :- include(bundle(html_page)).
 :- use_module(user(user_db)).
