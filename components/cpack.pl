@@ -29,7 +29,7 @@
 */
 
 :- module(c_cpack,
-	  [ package_table//2,		% +Packages, +Options
+	  [ package_table//1,		% +Options
 	    cpack//2,			% +Pack, +Options
 	    cpack_status_icon//1,	% +Pack
 	    cpack_link//1,		% +Resource
@@ -72,12 +72,14 @@ cliopatria:list_resource(Pack) -->
 	cpack_file(Pack, []).
 
 
-%%	package_table(Packages, Options)// is det.
+%%	package_table(Options)// is det.
 %
 %	Emit a table that describes Packages.   Options is currently not
 %	used.
 
-package_table(Packages, Options) -->
+package_table(Options) -->
+	{ findall(Package, current_package(Package, Options), Packages)
+	},
 	html_requires(css('cpack.css')),
 	html(table(class(block),
 		   [ tr([ th('OK?'),
@@ -88,6 +90,14 @@ package_table(Packages, Options) -->
 			])
 		   | \package_rows(Packages, 1, Options)
 		   ])).
+
+current_package(Package, Options) :-
+	(   option(user(User), Options)
+	->  rdf_has(Package, cpack:submittedBy, User)
+	;   true
+	),
+	rdfs_individual_of(Package, cpack:'Package').
+
 
 package_rows([], _, []) --> [].
 package_rows([H|T], Row, Options) -->

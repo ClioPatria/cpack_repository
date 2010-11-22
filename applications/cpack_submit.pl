@@ -161,23 +161,14 @@ cpack_my_packages(_Request) :-
 	list_packages([user(UserURI), update_all_link(true)]).
 
 list_packages(Options) :-
-	findall(Package, current_package(Package, Options), Packages),
 	reply_html_page(cliopatria(cpack),
 			title('CPACK packages'),
 			[ div(class(cpack),
 			      [ h1('CPACK packages'),
-				\package_table(Packages, []),
+				\package_table(Options),
 				\update_all_link(Options)
 			      ])
 			]).
-
-current_package(Package, Options) :-
-	(   option(user(User), Options)
-	->  rdf_has(Package, cpack:submittedBy, User)
-	;   true
-	),
-	rdfs_individual_of(Package, cpack:'Package').
-
 
 update_all_link(Options) -->
 	{ option(update_all_link(true), Options),
