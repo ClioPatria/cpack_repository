@@ -33,6 +33,7 @@
 	    xref_cpack_file/1
 	  ]).
 :- use_module(library(apply)).
+:- use_module(library(debug)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(git)).
@@ -52,6 +53,7 @@ analyse the package dependencies.
 %	Create cross-reference info for a complete pack.
 
 xref_cpack(Pack) :-
+	debug(xref),
 	findall(File, pack_prolog_file(Pack, File), Files),
 	maplist(xref_cpack_file, Files),
 	maplist(resolve_file, Files).
@@ -72,6 +74,7 @@ pack_prolog_file(Pack, File) :-
 %	  * cpack:exportsPredicate
 
 xref_cpack_file(File) :-
+	print_message(informational, cpack(xref(File))),
 	xref_source(File),
 	xref_to_rdf(File).
 
@@ -355,9 +358,16 @@ prolog:xref_source_file(Spec, File, _Options) :-
 	),
 	rdfs_individual_of(File, cpack:'File'), !.
 prolog:xref_source_file(Spec, File, _Options) :-
-	callable(Spec),
-	Spec =.. [Package, Local],
-	path_segments_atom(Local, Path),
-	rdf_has(File, cpack:path, Path),
-	rdf_has(File, cpack:inPack, Pack),
-	rdf_has(Pack, cpack:packageName, literal(Package)), !.
+	search_file(Spec, File), !.
+
+
+		 /*******************************
+		 *	      MESSAGES		*
+		 *******************************/
+
+:- multifile
+	prolog:message//1.
+
+prolog:message(cpack(xref(File))) -->
+	{ rdf_has(File, cpack:path, literal(Path)) },
+	[ 'Analyzing ~w'-[Path] ].
