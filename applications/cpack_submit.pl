@@ -249,20 +249,30 @@ git_show(Request) :-
 
 cpack_clone_server_form(_Request) :-
 	authorized(write(cpack, _)),
+	setting(cpack:server, DefaultServer),
 	reply_html_page(cliopatria(cpack),
 			[ title('Clone a CPACK server')
 			],
 			[ h1('Clone a CPACK server'),
+			  \explain_clone,
 			  form([ action(location_by_id(cpack_clone_server))
 			       ],
 			       table(class(form),
 				     [ \form_input('Server URL:',
 						   input([ name(server),
-							   size(50)
+							   size(50),
+							   value(DefaultServer)
 							 ])),
 				       \form_submit('Clone server')
 				     ]))
 			]).
+
+explain_clone -->
+	html(p([ 'Clone all packages from the given server. ',
+		 'This is intended to populate a server for trying new ',
+		 'package configurations.'
+	       ])).
+
 
 %%	cpack_clone_server(+Request)
 %

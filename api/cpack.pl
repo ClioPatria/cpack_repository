@@ -185,5 +185,8 @@ cpack_clone_data(_Request) :-
 	maplist(pack_info(clone), Packs, Data),
 	format('Content-type: application/x-prolog~n~n'),
 	format('% Server clone data~n~n', []),
+	maplist(write_clause, Data).
+
+write_clause(Data) :-
 	format('~q.~n', [Data]).
 
