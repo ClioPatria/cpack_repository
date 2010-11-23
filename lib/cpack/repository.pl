@@ -32,6 +32,7 @@
 	  [ cpack_add_repository/3,	% +User, +GitRepo, +Options
 	    cpack_update_package/2,	% +User, +Package
 	    cpack_our_mirror/2,		% +Package, -MirrorDir
+	    cpack_clone_server/3,	% +User, +Server, +Options)
 	    cpack_uri/3,		% +Type, +Object, -URI
 	    cpack_log/3,		% +Package, -ShortLog, +Options
 	    git_log_data/3,		% ?Field, ?Record, ?Data
@@ -51,6 +52,7 @@
 :- use_module(library(http/http_wrapper)).
 :- use_module(library(http/http_host)).
 :- use_module(library(http/http_path)).
+:- use_module(library(http/http_open)).
 :- use_module(library(http/dcg_basics)).
 :- use_module(xref).
 
@@ -303,6 +305,52 @@ rdf_load_git_stream(Graph, Format, In) :-
 	forall(member(rdf(S,P,O), RDF),
 	       rdf_assert(S,P,O,Graph)).
 
+		 /*******************************
+		 *	  CLONE A SERVER	*
+		 *******************************/
+
+%%	cpack_clone_server(+User, +Server, +Options)
+%
+%	Clone all packages from Server.
+
+cpack_clone_server(User, Server, _Options) :-
+	atom_concat(Server, '/cpack/clone_data', CloneURL),
+	http_prolog_data(CloneURL, Terms),
+	forall(member(PackInfo, Terms),
+	       clone_package(User, PackInfo)).
+
+%%	clone_package(+User, +PackInfo)
+%
+%	Clone package from another server.
+
+clone_package(User, cpack(_Name, Options)) :-
+	option(pack_repository(GitURL, GitOptions), Options),
+	cpack_add_repository(User, GitURL, GitOptions).
+
+%%	http_prolog_data(+URL, -Term) is det.
+%
+%	Read a Prolog term from URL.
+
+http_prolog_data(URL, Terms) :-
+	setup_call_cleanup(http_open(URL, In, []),
+			   read_stream_to_terms(In, Terms),
+			   close(In)).
+
+read_stream_to_terms(In, Terms) :-
+	read_term(In, Term0, []),
+	read_stream_to_terms(Term0, In, Terms).
+
+read_stream_to_terms(end_of_file, _, []) :- !.
+read_stream_to_terms(Term, In, [Term|T]) :-
+	read_term(In, Term1, []),
+	read_stream_to_terms(Term1, In, T).
+
+
+
+		 /*******************************
+		 *	       URIs		*
+		 *******************************/
+
 %%	cpack_uri(+Type, +Identifier, -URI) is det.
 %
 %	Create a persistent URI for Identifier of the given Type.
@@ -365,6 +413,11 @@ cpack_our_mirror(Pack, BareGitPath) :-
 	file_name_extension(PackageName, git, BareGit),
 	setting(cpack:mirrors, MirrorDir),
 	directory_file_path(MirrorDir, BareGit, BareGitPath).
+
+
+		 /*******************************
+		 *	  GIT OPERATIONS	*
+		 *******************************/
 
 %%	cpack_log(+Pack, -ShortLog, Options) is det.
 %
