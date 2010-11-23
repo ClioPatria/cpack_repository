@@ -325,7 +325,7 @@ cpack_clone_server(User, Server, _Options) :-
 
 clone_package(User, cpack(Name, Options)) :-
 	print_message(informational, cpack(clone(Name, Options))),
-	option(pack_repository(GitURL, GitOptions), Options),
+	option(pack_repository(git(GitURL, GitOptions)), Options),
 	cpack_add_repository(User, GitURL, GitOptions).
 
 %%	http_prolog_data(+URL, -Term) is det.
