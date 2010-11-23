@@ -73,10 +73,16 @@ pack_prolog_file(Pack, File) :-
 %	  * cpack:module
 %	  * cpack:exportsPredicate
 
+:- thread_local
+	xref_git/0.
+
 xref_cpack_file(File) :-
 	print_message(informational, cpack(xref(File))),
-	xref_source(File),
-	xref_to_rdf(File).
+	setup_call_cleanup(assert(xref_git, Ref),
+			   (   xref_source(File),
+			       xref_to_rdf(File)
+			   ),
+			   erase(Ref)).
 
 :- rdf_meta
 	file_property(r,r,o).
@@ -351,6 +357,7 @@ prolog:xref_source_identifier(File, File) :-
 %	the cross-referencer to analyse files in GIT repositories.
 
 prolog:xref_source_file(Spec, File, _Options) :-
+	xref_git,
 	rdf_is_resource(Spec),
 	(   File = Spec
 	;   prolog_file_type(Ext, prolog),
@@ -358,6 +365,7 @@ prolog:xref_source_file(Spec, File, _Options) :-
 	),
 	rdfs_individual_of(File, cpack:'File'), !.
 prolog:xref_source_file(Spec, File, _Options) :-
+	xref_git,
 	search_file(Spec, File), !.
 
 

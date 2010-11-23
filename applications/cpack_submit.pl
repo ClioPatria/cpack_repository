@@ -46,6 +46,7 @@
 http:location(cpack_api,  api(cpack),  []).
 
 :- http_handler(cpack(submit),		   cpack_submit_form,	     []).
+:- http_handler(cpack(clone_server),	   cpack_clone_server_form,  []).
 :- http_handler(cpack(list_packages),	   cpack_list_packages,	     []).
 :- http_handler(cpack(my_packages),	   cpack_my_packages,	     []).
 :- http_handler(cpack(update_my_packages), cpack_update_my_packages, []).
@@ -241,4 +242,9 @@ git_show(Request) :-
 			]).
 
 
+%%	cpack_clone_server_form(+Request)
+%
+%	Provide a form to clone a CPACK server
 
+cpack_clone_server_form(_Request) :-
+	true.
