@@ -86,9 +86,10 @@ cpack_add_repository(User, URL, Options) :-
 	(   exists_directory(BareGitPath)
 	->  cpack_update_repository(User, URL, Options)
 	;   git([clone, '--mirror', URL, BareGitPath], []),
-	    rdf_assert(User, cpack:submitted, Graph, User)
-	),
-	update_metadata(BareGitPath, Graph, [user(User),cloned(URL)|Options]).
+	    rdf_assert(User, cpack:submitted, Graph, User),
+	    update_metadata(BareGitPath, Graph,
+			    [user(User),cloned(URL)|Options])
+	).
 
 %%	cpack_update_package(+User, +Package) is det.
 %
@@ -127,7 +128,8 @@ cpack_update_repository(User, URL, Options) :-
 	(   (   Hash1 \== Hash0
 	    ;	option(update_metadata(always), Options, always)
 	    )
-	->  update_metadata(BareGitPath, Graph, [user(User),cloned(URL)|Options])
+	->  update_metadata(BareGitPath, Graph,
+			    [user(User),cloned(URL)|Options])
 	;   true
 	).
 

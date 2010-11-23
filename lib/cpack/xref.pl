@@ -121,9 +121,11 @@ file_property(File, cpack:publicPredicate, literal(Pred)) :-
 	xref_defined(File, Callable, public(_Line)),
 	head_atom(Callable, Pred).
 file_property(File, UsesFile, Uses) :-
+	rdf_has(File, cpack:inPack, Pack),
 	xref_uses_file(File, Spec, Path),
 	(   rdf_is_resource(Path),
-	    rdfs_individual_of(Path, cpack:'File')
+	    rdfs_individual_of(Path, cpack:'File'),
+	    rdf_has(Path, cpack:inPack, Pack)
 	->  rdf_equal(UsesFile, cpack:usesPackageFile),
 	    Uses = Path
 	;   file_ref(Spec, Uses),
