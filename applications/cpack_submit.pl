@@ -250,9 +250,9 @@ git_show(Request) :-
 cpack_clone_server_form(_Request) :-
 	authorized(write(cpack, _)),
 	reply_html_page(cliopatria(cpack),
-			[ title('Clone CPACK a server')
+			[ title('Clone a CPACK server')
 			],
-			[ h1('Clone CPACK a server'),
+			[ h1('Clone a CPACK server'),
 			  form([ action(location_by_id(cpack_clone_server))
 			       ],
 			       table(class(form),
