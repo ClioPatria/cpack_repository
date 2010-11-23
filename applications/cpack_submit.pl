@@ -52,6 +52,7 @@ http:location(cpack_api,  api(cpack),  []).
 :- http_handler(cpack(update_my_packages), cpack_update_my_packages, []).
 :- http_handler(cpack_api(submit),	   cpack_submit,	     []).
 :- http_handler(cpack_api(resubmit),	   cpack_resubmit,	     []).
+:- http_handler(cpack_api(clone_server),   cpack_clone_server,	     []).
 :- http_handler(cpack(show_file),	   cpack_show_file,	     []).
 :- http_handler(cpack(git_show),	   git_show,	             []).
 
@@ -247,4 +248,34 @@ git_show(Request) :-
 %	Provide a form to clone a CPACK server
 
 cpack_clone_server_form(_Request) :-
-	true.
+	authorized(write(cpack, _)),
+	reply_html_page(cliopatria(cpack),
+			[ title('Clone CPACK a server')
+			],
+			[ h1('Clone CPACK a server'),
+			  form([ action(location_by_id(cpack_clone_server))
+			       ],
+			       table(class(form),
+				     [ \form_input('Server URL:',
+						   input([ name(server),
+							   size(50)
+							 ])),
+				       \form_submit('Clone server')
+				     ]))
+			]).
+
+%%	cpack_clone_server(+Request)
+%
+%	API handler to clone a server
+
+cpack_clone_server(Request) :-
+	logged_on(User),
+	http_parameters(Request,
+			[ server(ServerURL,
+				 [ description('URL of server to clone')
+				 ])
+			]),
+	authorized(write(cpack, clone)),
+	user_property(User, url(UserURL)),
+	call_showing_messages(cpack_clone_server(UserURL, ServerURL, []),
+			      []).

@@ -323,7 +323,8 @@ cpack_clone_server(User, Server, _Options) :-
 %
 %	Clone package from another server.
 
-clone_package(User, cpack(_Name, Options)) :-
+clone_package(User, cpack(Name, Options)) :-
+	print_message(informational, cpack(clone(Name, Options))),
 	option(pack_repository(GitURL, GitOptions), Options),
 	cpack_add_repository(User, GitURL, GitOptions).
 
@@ -637,6 +638,8 @@ prolog:message(cpack(updated(Graph, Hash0, Hash1))) -->
 	    },
 	    [ ' g~w..g~w'-[Short0,Short1] ]
 	).
+prolog:message(cpack(clone(Name, _Options))) -->
+	[ 'Cloning CPACK ~w ...'-[Name] ].
 
 package_name(Graph) -->
 	{ rdf_has(Graph, cpack:name, Literal),
