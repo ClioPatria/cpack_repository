@@ -35,7 +35,8 @@
 	    cpack_list/2,		% +Package, -ListOfImplied
 	    cpack_not_satisfied/2,	% +Package, -Reasons
 	    file_not_satisfied/2,	% +File, -Reasons
-	    file_imports_from/3		% +File, -Imports, -From
+	    file_imports_from/3,	% +File, -Imports, -From
+	    file_calls_public_from/3	% +File, -UsedFile, +PI
 	  ]).
 :- use_module(library(assoc)).
 :- use_module(library(ugraphs)).

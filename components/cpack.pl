@@ -593,6 +593,12 @@ required_predicate(_File, literal(LPI)) -->
 	cpack_link(literal(LPI)),
 	html([span(class(msg_informational),
 		   ' multifile')]).
+required_predicate(File, literal(LPI)) -->
+	{ file_calls_public_from(File, UsedFile, LPI)
+	},
+	cpack_link(literal(LPI)),
+	html([span(class(msg_informational),
+		   [' public in ', \cpack_link(UsedFile)])]).
 required_predicate(_File, PI) -->
 	cpack_link(PI),
 	html(span(class(msg_error), ' undefined')).
