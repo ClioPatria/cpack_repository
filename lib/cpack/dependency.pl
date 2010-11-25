@@ -140,6 +140,9 @@ cpack_conflicts_by(Package, Conflict, same_file(Path,File1,File2)) :-
 %	PackList is a list of all packages  that need to be installed to
 %	get Pack working. This list is ensured to contain Pack.
 %
+%	@param	Pack is either the URI of a single Pack or a list of
+%		these.
+%
 %	@tbd	Toplogical sorting may not be possible.  As ordering is
 %		not always necessary, we should try to relax
 %		dependencies if a topological sort is not possible due
@@ -176,8 +179,12 @@ cpack_satisfied(_).
 %	Create a full dependency graph for pack as a ugraph.
 
 dependency_ugraph(Pack, Ugraph) :-
+	(   is_list(Pack)
+	->  Agenda = Pack
+	;   Agenda = [Pack]
+	),
 	empty_assoc(Visited),
-	dependency_ugraph([Pack], Visited, Ugraph).
+	dependency_ugraph(Agenda, Visited, Ugraph).
 
 dependency_ugraph([], _, []).
 dependency_ugraph([H|T], Visited, Graph) :-

@@ -36,6 +36,7 @@
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(semweb/rdf_label)).
 :- use_module(library(http/http_dispatch)).
+:- use_module(library(http/http_parameters)).
 
 /** <module> CPACK API for installing packages
 
@@ -73,21 +74,46 @@ To *discover* a package, we will search for
 
 %%	cpack_install_data(+Request)
 %
-%	Return installation info for installing Pack.  The data is
-%	returned as a Prolog term.
+%	Return installation info  for  installing   Pack.  The  data  is
+%	returned as a Prolog term. This handler   acts  both as a prefix
+%	handler, extracting the desired package   from  the remainder of
+%	the request URI or  it  handles   one  or  more  =p= parameters.
+%	Requesting multiple packages makes the system order the packages
+%	considering the dependencies.
+%
+%	@tbd	Probably we should also send the ClioPatria version, so
+%		the client can verify that his ClioPatria is at least as
+%		new.
 
 cpack_install_data(Request) :-
-	memberchk(path_info(PackName), Request),
+	memberchk(path_info(PackName), Request), !,
 	(   rdf_has(Pack, cpack:packageName, literal(PackName))
-	->  (   catch(pack_install_data(Pack, Data), E, true)
-	    ->  (   nonvar(E)
-		->  client_error(E, Error),
-		    reply(PackName, error(Error))
-		;   reply(PackName, cpack(PackName, Data))
-		)
-	    ;	reply(PackName, fail)
-	    )
+	->  reply_install_data(PackName, [Pack])
 	;   reply(PackName, no_pack(PackName))
+	).
+cpack_install_data(Request) :-
+	http_parameters(Request,
+			[ p(PackNames,
+			    [ list(atom),
+			      description('Name of the desired packages')
+			    ])
+			]),
+	maplist(pack_uri, PackNames, Packs),
+	reply_install_data(PackNames, Packs).
+
+pack_uri(PackName, Pack) :-
+	rdf_has(Pack, cpack:packageName, literal(PackName)), !.
+pack_uri(PackName, _) :-
+	existence_error(cpack, PackName).
+
+reply_install_data(PackName, Packs) :-
+	(   catch(pack_install_data(Packs, Data), E, true)
+	->  (   nonvar(E)
+	    ->  client_error(E, Error),
+		reply(PackName, error(Error))
+	    ;   reply(PackName, cpack(PackName, Data))
+	    )
+	;   reply(PackName, fail)
 	).
 
 reply(PackName, Data) :-
