@@ -54,6 +54,7 @@
 :- use_module(library(http/http_path)).
 :- use_module(library(http/http_open)).
 :- use_module(library(http/dcg_basics)).
+:- use_module(user(user_db)).
 :- use_module(xref).
 
 /** <module> Manage CPACK repositories
@@ -137,6 +138,8 @@ update_allowed(_, _, Options) :-
 	option(allowed(true), Options), !.
 update_allowed(User, Package, _) :-
 	rdf(User, cpack:submitted, Package, User), !.
+update_allowed(_, _, _) :-
+	catch(authorized(admin(cpack)), _, fail).
 update_allowed(_, Package, _) :-
 	permission_error(update, cpack, Package).
 
