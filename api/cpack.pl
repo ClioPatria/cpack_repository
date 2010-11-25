@@ -67,7 +67,7 @@ To *discover* a package, we will search for
 */
 
 :- http_handler(root('cpack/'),	   cpack_install_data, [prefix]).
-:- http_handler(cpack(clone_data), cpack_clone_data,   [prefix]).
+:- http_handler(cpack(clone_data), cpack_clone_data,   []).
 :- http_handler(root('schema/cpack'),
 		http_reply_file(cliopatria('rdf/cpack/cpack.ttl'), []), []).
 
@@ -168,6 +168,9 @@ file_info(URI, file(Path, Options)) :-
 
 file_option(URI, module(M)) :-
 	rdf_has(URI, cpack:module, literal(M)).
+file_option(URI, size(Bytes)) :-
+	rdf_has(URI, cpack:size, literal(type(xsd:integer, Atom))),
+	atom_number(Atom, Bytes).
 
 
 		 /*******************************
