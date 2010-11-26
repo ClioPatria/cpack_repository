@@ -4,20 +4,31 @@ Wishlist:
 
   * Allow owner/user to overrule problems (notably undefined
     predicates).
+
   * When updating/accepting a package, do some sanity checks
     first.
+
+      - Fetch into new branch (e.g. eval):
+
+	  % git fetch origin master:eval
+	  <evaluate, and if ok>
+	  % git branch -M eval master
+
   * Removing packages.  Notably, we need to keep track of the
     config files, so that we can delete them.  We can base that
     on config.done, which keeps track of where the file comes
     from.
+
   * Removing packages: warn about broken dependencies.  This
     probably needs a list of why a package is installed: one
     of
 	- explicit
 	- resolves_for(<pack>)
+
   * Signing.  Also make servers sign versions
-  * Clone servers.  Add fetching required clone-info to the
-    API.
+
+  * Allow users to trust each other and/or allow them to
+    give other users the right to update a repository.
 
 Long term:
 
