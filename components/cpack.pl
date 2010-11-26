@@ -481,7 +481,7 @@ cpack_update_icon(Pack) -->
 	{ logged_on(User),
 	  (   user_property(User, url(UserURI)),
 	      rdf_has(Pack, cpack:submittedBy, UserURI)
-	  ;   check_permission(User, admin(cpack))
+	  ;   catch(check_permission(User, admin(cpack)), _, fail)
 	  ), !,
 	  http_absolute_location(icons('webdev-arrow-up-icon.png'), IMG, []),
 	  http_current_request(Request),
