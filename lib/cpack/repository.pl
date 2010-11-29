@@ -55,6 +55,7 @@
 :- use_module(library(http/http_open)).
 :- use_module(library(http/dcg_basics)).
 :- use_module(user(user_db)).
+:- use_module(library(foaf_schema)).
 :- use_module(xref).
 
 /** <module> Manage CPACK repositories

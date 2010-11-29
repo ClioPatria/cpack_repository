@@ -1,5 +1,4 @@
 :- module(conf_cpack_repository, []).
-:- use_module(config_available(foaf)).
 :- use_module(cpack_repository(applications/cpack_submit)).
 :- use_module(cpack_repository(applications/cpack_home)).
 :- use_module(library(http/http_path)).
