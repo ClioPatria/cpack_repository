@@ -149,8 +149,9 @@ cpack_sort_key(title, Pack, Key) :-
 	;   collation_key('', Key)
 	).
 cpack_sort_key(type, Pack, Key) :-
-	(   rdf_has(Pack, rdf_type, Type)
-	->  rdf_display_label(Type, Key)
+	(   rdf_has(Pack, rdf:type, Type)
+	->  rdf_display_label(Type, Label),
+	    collation_key(Label, Key)
 	;   Key = ''
 	).
 cpack_sort_key(author, Pack, Key) :-
