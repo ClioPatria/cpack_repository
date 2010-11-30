@@ -154,20 +154,27 @@ submit_option(User, _Pack, allowed(true)) :-
 %	lists packages for  the  currently  logged   on  user.  It  is a
 %	separate handler to make it accessible from the menu.
 
-cpack_list_packages(_Request) :-
-	list_packages([]).
+cpack_list_packages(Request) :-
+	list_packages(Request, []).
 
-cpack_my_packages(_Request) :-
+cpack_my_packages(Request) :-
 	ensure_logged_on(User),
 	user_property(User, url(UserURI)),
-	list_packages([user(UserURI), update_all_link(true)]).
+	list_packages(Request, [user(UserURI), update_all_link(true)]).
 
-list_packages(Options) :-
+list_packages(Request, Options) :-
+	http_parameters(Request,
+			[ sort_by(By,
+				  [ oneof([status,name,title,type,author]),
+				    default(name),
+				    description('Sort table by this key')
+				  ])
+			]),
 	reply_html_page(cliopatria(cpack),
 			title('CPACK packages'),
 			[ div(class(cpack),
 			      [ h1('CPACK packages'),
-				\package_table(Options),
+				\package_table([sort_by(By)|Options]),
 				\update_all_link(Options)
 			      ])
 			]).

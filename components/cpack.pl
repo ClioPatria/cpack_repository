@@ -85,11 +85,11 @@ package_table(Options) -->
 	},
 	html_requires(css('cpack.css')),
 	html(table(class(block),
-		   [ tr([ th('OK?'),
-			  th('Name'),
-			  th('Title'),
-			  th('Type'),
-			  th('Author')
+		   [ tr([ \sort_th(status, By, 'OK?'),
+			  \sort_th(name,   By, 'Name'),
+			  \sort_th(title,  By, 'Title'),
+			  \sort_th(type,   By, 'Type'),
+			  \sort_th(author, By, 'Author')
 			])
 		   | \package_rows(Packages, 1, Options)
 		   ])).
