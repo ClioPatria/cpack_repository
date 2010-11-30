@@ -152,9 +152,8 @@ cpack_conflicts_by(Package, Conflict, same_file(Path,File1,File2)) :-
 
 cpack_list(Pack, Packs) :-
 	dependency_ugraph(Pack, Ugraph),
-	(   top_sort(Ugraph, RPacks)
-	->  reverse(RPacks, Packs),
-	    check_conflicts(Packs),
+	(   sort_dependencies(Ugraph, Packs)
+	->  check_conflicts(Packs),
 	    check_satisfied(Packs)
 	;   domain_error(non_cyclic_dependency_structure, Ugraph)
 	).
@@ -178,24 +177,64 @@ cpack_satisfied(_).
 %
 %	Create a full dependency graph for pack as a ugraph.
 
-dependency_ugraph(Pack, Ugraph) :-
+dependency_ugraph(Pack, UGraph) :-
 	(   is_list(Pack)
 	->  Agenda = Pack
 	;   Agenda = [Pack]
 	),
 	empty_assoc(Visited),
-	dependency_ugraph(Agenda, Visited, Ugraph).
+	dependency_ugraph(Agenda, Visited, Graph),
+	keysort(Graph, UGraph).
 
 dependency_ugraph([], _, []).
 dependency_ugraph([H|T], Visited, Graph) :-
 	(   get_assoc(H, Visited, _)
 	->  dependency_ugraph(T, Visited, Graph)
-	;   findall(Required, cpack_requires(H, Required, _), RList),
+	;   findall(Required, cpack_requires(H, Required, _), RList0),
+	    sort(RList0, RList),
 	    Graph = [H-RList|More],
 	    put_assoc(H, Visited, true, Visited2),
 	    append(RList, T, Agenda),
 	    dependency_ugraph(Agenda, Visited2, More)
 	).
+
+%%	sort_dependencies(+Graph, -List)
+%
+%	List is a package list that satisfies the dependencies in Graph.
+
+sort_dependencies(Graph, List) :-
+	top_sort(Graph, RList), !,
+	reverse(RList, List).
+sort_dependencies(Graph, List) :-
+	connect_graph(Graph, Start, Connected),
+	top_sort(Connected, [Start|RList]), !,
+	reverse(RList, List).
+
+%%	connect_graph(+Graph, -Start, -Connected) is det.
+%
+%	Turn Graph into a connected graph   by putting a shared starting
+%	point before all vertices.
+
+connect_graph([], 0, []) :- !.
+connect_graph(Graph, Start, [Start-Vertices|Graph]) :-
+	vertices(Graph, Vertices),
+	Vertices = [First|_],
+	before(First, Start).
+
+%%	before(+Term, -Before) is det.
+%
+%	Unify Before to a term that comes   before  Term in the standard
+%	order of terms.
+%
+%	@error instantiation_error if Term is unbound.
+
+before(X, _) :-
+	var(X), !,
+	instantiation_error(X).
+before(Number, Start) :-
+	number(Number), !,
+	Start is Number - 1.
+before(_, 0).
 
 
 		 /*******************************
