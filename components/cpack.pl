@@ -79,7 +79,9 @@ cliopatria:list_resource(Pack) -->
 %	used.
 
 package_table(Options) -->
-	{ findall(Package, current_package(Package, Options), Packages)
+	{ option(sort_by(By), Options, name),
+	  findall(Package, current_package(Package, Options), List),
+	  sort_packages(By, List, Packages)
 	},
 	html_requires(css('cpack.css')),
 	html(table(class(block),
@@ -117,6 +119,49 @@ package_row(Package, _Options) -->
 	       td(class(author),
 		  div(\cpack_prop(Package, cpack:author)))
 	     ]).
+
+
+%%	sort_packages(By, Packs, Sorted)
+%
+%	Sort a list of packages by the key By.
+
+sort_packages(Key, Packs, Sorted) :-
+	map_list_to_pairs(cpack_sort_key(Key), Packs, Keyed),
+	keysort(Keyed, KeySorted),
+	pairs_values(KeySorted, Sorted).
+
+%%	cpack_sort_key(+KeyName, +CPACK, -KeyValue) is det.
+%
+%	KeyValue is a sort-key for sorting package by KeyName.
+
+cpack_sort_key(status, Pack, Status) :-
+	(   package_problem(Pack, _Problem)
+	->  Status = bad
+	;   Status = good
+	).
+cpack_sort_key(name, Pack, Key) :-
+	rdf_display_label(Pack, Name),
+	collation_key(Name, Key).
+cpack_sort_key(title, Pack, Key) :-
+	(   rdf_has(Pack, dcterms:title, Literal)
+	->  literal_text(Literal, Title),
+	    collation_key(Title, Key)
+	;   collation_key('', Key)
+	).
+cpack_sort_key(type, Pack, Key) :-
+	(   rdf_has(Pack, rdf_type, Type)
+	->  rdf_display_label(Type, Key)
+	;   Key = ''
+	).
+cpack_sort_key(author, Pack, Key) :-
+	(   rdf_has(Pack, cpack:author, Author)
+	->  (   rdf_has(Author, foaf:name, Literal)
+	    ->  literal_text(Literal, Title),
+		collation_key(Title, Key)
+	    ;   Key = Author
+	    )
+	;   Key = ''
+	).
 
 
 		 /*******************************
