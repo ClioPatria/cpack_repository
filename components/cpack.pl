@@ -379,7 +379,7 @@ pack_size(Files) -->
 	},
 	html(p([ 'Pack contains ', \n('~D', Count), ' files holding a total of ',
 		 b(\n(human, Total)), 'bytes. ',
-		 'Below is the file hierarchy of of the package. ',
+		 'Below is the file hierarchy of the package. ',
 		 'The tree link to pages that provide history and dependencies ',
 		 'for each file.'
 	       ])).
