@@ -38,10 +38,17 @@
 %
 %	HTTP handler that provides the CPACK welcome page
 
-cpack_home(_Request) :-
+cpack_home(Request) :-
+	http_parameters(Request,
+			[ sort_by(By,
+				  [ oneof([status,name,title,type,author]),
+				    default(name),
+				    description('Sort table by this key')
+				  ])
+			]),
 	reply_html_page(cliopatria(cpack),
 			title('CPACK: The ClioPatria Package Manager'),
 			div(class(cpack),
 			    [ \insert_html_file(html('cpack_home.html')),
-			      \package_table([])
+			      \package_table([sort_by(By)])
 			    ])).
