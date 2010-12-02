@@ -33,3 +33,11 @@ cliopatria:menu_item(275=current_user/cpack_my_packages, 'My CPACKs') :-
 :- rdf_set_predicate(cpack:submittedBy, inverse_of(cpack:submitted)).
 :- rdf_set_predicate(cpack:resolves,    inverse_of(cpack:resolvesAs)).
 :- rdf_set_predicate(cpack:resolvesAs,  inverse_of(cpack:resolves)).
+
+% CPACK is an extension of ClioPatria and uses the ClioPatria skin.
+
+:- multifile
+	user:body//2.
+
+user:body(user(Style), Body) -->
+	user:body(cliopatria(Style), Body).
