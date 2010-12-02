@@ -7,6 +7,9 @@
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_library)).
 
+:- use_module(applications(isearch)).
+:- use_module(library(http/http_dispatch)).
+
 /** <module> CPACK repository interface
 */
 
@@ -41,3 +44,27 @@ cliopatria:menu_item(275=current_user/cpack_my_packages, 'My CPACKs') :-
 
 user:body(user(Style), Body) -->
 	user:body(cliopatria(Style), Body).
+
+% Hijack the search-field, redirecting the queries to the interactive
+% search page.
+
+:- http_handler(cpack(isearch_literal),
+		isearch_page([ header(false),
+			       query_type(literal)
+			     ]),
+		[id(list_triples_with_literal), priority(10)]).
+:- http_handler(cpack(isearch),
+		isearch_page([ header(false)
+			     ]),
+		[id(search), priority(10)]).
+
+:- rdf_meta
+	exclude_property(r).
+
+cliopatria:facet_exclude_property(P) :-
+	exclude_property(P).
+
+exclude_property(cpack:repository).
+exclude_property(cpack:base).
+exclude_property(cpack:path).
+exclude_property(cpack:size).
