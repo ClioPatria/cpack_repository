@@ -386,7 +386,15 @@ prolog:xref_source_file(Spec, File, _Options) :-
 	rdfs_individual_of(File, cpack:'File'), !.
 prolog:xref_source_file(Spec, File, _Options) :-
 	xref_git,
-	search_file(Spec, File), !.
+	search_file(Spec, File), !,
+					% but NOT a ClioPatria file
+	\+ ( path_rule(Spec, cpacks(Segments)),
+	     path_segments_atom(Segments, InPack),
+	     absolute_file_name(cliopatria(InPack), _,
+				[ file_type(prolog),
+				  access(read),
+				  file_errors(fail)
+				])).
 
 
 		 /*******************************
