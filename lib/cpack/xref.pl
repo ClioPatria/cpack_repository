@@ -190,30 +190,48 @@ system_file_uri(Path, Root, Class, Graph, URI) :-
 	directory_file_path(Root, RelPath, Path),
 	cpack_uri(prolog, RelPath, URI),
 	(   rdfs_individual_of(URI, cpack:'File')
-	->  true
+	->  update_exports(Path, URI, Graph)
 	;   file_base(RelPath, Base),
 	    file_base_name(RelPath, FileName),
 	    rdf_assert(URI, rdf:type, Class, Graph),
 	    rdf_assert(URI, cpack:path, literal(RelPath), Graph),
 	    rdf_assert(URI, cpack:name, literal(FileName), Graph),
 	    rdf_assert(URI, cpack:base, literal(Base), Graph),
-	    (	xref_public_list(Path, _, Module, Exports, Public, _Meta, -)
-	    ->	rdf_assert(URI, cpack:module, literal(Module), Graph),
-		forall(member(PI, Exports),
-		       (   cannonical_pi(PI, CannPI),
-		           format(atom(Id), '~q', [CannPI]),
-			   rdf_assert(URI, cpack:exportsPredicate,
-				      literal(Id), Graph)
-		       )),
-		forall(member(PI, Public),
-		       (   cannonical_pi(Module:PI, CannPI),
-		           format(atom(Id), '~q', [CannPI]),
-			   rdf_assert(URI, cpack:publicPredicate,
-				      literal(Id), Graph)
-		       ))
-	    ;	true
-	    )
+	    update_exports(Path, URI, Graph)
 	).
+
+update_exports(Path, URI, Graph) :-
+	time_file(Path, Time),
+	format_time(atom(XSD), '%FT%T%:z', Time),
+	rdf_equal(xsd:dateTime, Type),
+	RDFStamp = literal(type(Type, XSD)),
+	(   rdf_has(URI, cpack:lastModifiedTime, RDFStamp)
+	->  true
+	;   rdf_retractall(URI, cpack:lastModifiedTime, _,  Graph),
+	    rdf_retractall(URI, cpack:exportsPredicate, _, Graph),
+	    rdf_retractall(URI, cpack:publicPredicate, _, Graph),
+	    rdf_retractall(URI, cpack:module, _, Graph),
+	    rdf_assert(URI, cpack:lastModifiedTime, RDFStamp, Graph),
+	    assert_exports(Path, URI, Graph)
+	).
+
+assert_exports(Path, URI, Graph) :-
+	xref_public_list(Path, _, Module, Exports, Public, _Meta, -), !,
+	rdf_assert(URI, cpack:module, literal(Module), Graph),
+	forall(member(PI, Exports),
+	       (   cannonical_pi(PI, CannPI),
+		   format(atom(Id), '~q', [CannPI]),
+		   rdf_assert(URI, cpack:exportsPredicate,
+			      literal(Id), Graph)
+	       )),
+	forall(member(PI, Public),
+	       (   cannonical_pi(Module:PI, CannPI),
+		   format(atom(Id), '~q', [CannPI]),
+		   rdf_assert(URI, cpack:publicPredicate,
+			      literal(Id), Graph)
+	       )).
+assert_exports(_,_,_).
+
 
 cannonical_pi(M:PI, M:CannPi) :- !,
 	cannonical_pi(PI, CannPi).
