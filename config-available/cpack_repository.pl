@@ -7,7 +7,6 @@
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_library)).
 
-:- use_module(applications(isearch)).
 :- use_module(library(http/http_dispatch)).
 
 /** <module> CPACK repository interface
@@ -20,8 +19,10 @@ cliopatria:menu_label(cpack, 'CPACK').
 
 cliopatria:menu_item(100=cpack/cpack_list_packages,	   'List packs').
 cliopatria:menu_item(200=cpack/cpack_submit_form,	   'Submit pack').
-cliopatria:menu_item(300=cpack/cpack_clone_server_form,	   'Clone server').
-cliopatria:menu_item(400=cpack/cpack_refresh_metadata_api, 'Refresh metadata').
+cliopatria:menu_item(300=cpack/cpack_clone_server_form,	   'Clone server') :-
+	logged_on(admin).
+cliopatria:menu_item(400=cpack/cpack_refresh_metadata_api, 'Refresh metadata') :-
+	logged_on(_).
 cliopatria:menu_item(275=current_user/cpack_my_packages,   'My CPACKs') :-
 	logged_on(_).
 
@@ -46,18 +47,7 @@ cliopatria:menu_item(275=current_user/cpack_my_packages,   'My CPACKs') :-
 user:body(user(Style), Body) -->
 	user:body(cliopatria(Style), Body).
 
-% Hijack the search-field, redirecting the queries to the interactive
-% search page.
-
-:- http_handler(cpack(isearch_literal),
-		isearch_page([ header(false),
-			       query_type(literal)
-			     ]),
-		[id(list_triples_with_literal), priority(10)]).
-:- http_handler(cpack(isearch),
-		isearch_page([ header(false)
-			     ]),
-		[id(search), priority(10)]).
+% Tailor the package =isearch= (it is recommented to load that)
 
 :- rdf_meta
 	exclude_property(r).
