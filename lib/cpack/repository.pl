@@ -31,6 +31,8 @@
 :- module(cpack_repository,
 	  [ cpack_add_repository/3,	% +User, +GitRepo, +Options
 	    cpack_update_package/2,	% +User, +Package
+	    cpack_refresh_metadata/0,
+	    cpack_refresh_metadata/1,	% +MirrorGit
 	    cpack_our_mirror/2,		% +Package, -MirrorDir
 	    cpack_clone_server/3,	% +User, +Server, +Options)
 	    cpack_uri/3,		% +Type, +Object, -URI
@@ -155,7 +157,7 @@ update_metadata(BareGitPath, Graph, Options) :-
 	catch(load_meta_data(BareGitPath, Graph, Options), E,
 	      print_message(error, E)),
 	update_decription(BareGitPath, Graph),
-	add_timestamp(Graph),
+	add_timestamp(Graph, Options),
 	(   option(cloned(ClonedURL), Options)
 	->  option(branch(Branch), Options, master),
 	    rdf_bnode(Cloned),
@@ -179,7 +181,10 @@ update_metadata(BareGitPath, Graph, Options) :-
 	foaf_merge(_),
 	xref_cpack(Graph).
 
-add_timestamp(Graph) :-
+add_timestamp(Graph, Options) :-
+	option(submitted_date(DateTime), Options), !,
+	rdf_assert(Graph, cpack:submittedDate, DateTime, Graph).
+add_timestamp(Graph, _Options) :-
 	get_time(Now),
 	format_time(atom(DateTime), '%FT%T%Oz', Now),
 	rdf_assert(Graph, cpack:submittedDate,
@@ -310,6 +315,55 @@ rdf_load_git_stream(Graph, Format, In) :-
 			]),
 	forall(member(rdf(S,P,O), RDF),
 	       rdf_assert(S,P,O,Graph)).
+
+
+		 /*******************************
+		 *	UPDATE FROM MIRROR	*
+		 *******************************/
+
+%%	cpack_refresh_metadata(+BareGitPath) is det.
+%
+%	Regenerate the metadata associated  with   BareGitPath  from the
+%	plain (mirrored) git repository.
+
+cpack_refresh_metadata(BareGitPath) :-
+	file_base_name(BareGitPath, BareGit),
+	file_name_extension(PackageName, git, BareGit),
+	package_graph(PackageName, Graph),
+	git_remote_url(origin, Origin, [directory(BareGitPath)]),
+	git_default_branch(DefBranch, [directory(BareGitPath)]),
+	(   rdf_has(Graph, cpack:submittedDate, Date)
+	->  Extra = [submitted_date(Date)]
+	;   Extra = []
+	),
+	update_metadata(BareGitPath, Graph,
+			[ cloned(Origin),
+			  branch(DefBranch)
+			| Extra
+			]).
+
+%%	cpack_refresh_metadata
+%
+%	Rebuild all (xref) metadata for all  packages from scratch. This
+%	is intended to deal with changes   to the metadata formats, lost
+%	GIT mirrors, etc.
+
+cpack_refresh_metadata :-
+	setting(cpack:mirrors, MirrorDir),
+	directory_file_path(MirrorDir, '*.git', Pattern),
+	expand_file_name(Pattern, BareGits),
+	clear_xref_graphs,
+	maplist(cpack_refresh_metadata, BareGits).
+
+clear_xref_graphs :-
+	clear_xref_graph(prolog),
+	clear_xref_graph(cliopatria),
+	clear_xref_graph('file-references').
+
+clear_xref_graph(Name) :-
+	cpack_uri(graph, Name, URI),
+	rdf_retractall(_,_,_,URI).
+
 
 		 /*******************************
 		 *	  CLONE A SERVER	*

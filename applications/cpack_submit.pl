@@ -45,16 +45,17 @@
 
 http:location(cpack_api,  api(cpack),  []).
 
-:- http_handler(cpack(submit),		   cpack_submit_form,	     []).
-:- http_handler(cpack(clone_server),	   cpack_clone_server_form,  []).
-:- http_handler(cpack(list_packages),	   cpack_list_packages,	     []).
-:- http_handler(cpack(my_packages),	   cpack_my_packages,	     []).
-:- http_handler(cpack(update_my_packages), cpack_update_my_packages, []).
-:- http_handler(cpack_api(submit),	   cpack_submit,	     []).
-:- http_handler(cpack_api(resubmit),	   cpack_resubmit,	     []).
-:- http_handler(cpack_api(clone_server),   cpack_clone_server,	     []).
-:- http_handler(cpack(show_file),	   cpack_show_file,	     []).
-:- http_handler(cpack(git_show),	   git_show,	             []).
+:- http_handler(cpack(submit),		     cpack_submit_form,		 []).
+:- http_handler(cpack(clone_server),	     cpack_clone_server_form,	 []).
+:- http_handler(cpack(list_packages),	     cpack_list_packages,	 []).
+:- http_handler(cpack(my_packages),	     cpack_my_packages,		 []).
+:- http_handler(cpack(update_my_packages),   cpack_update_my_packages,	 []).
+:- http_handler(cpack_api(submit),	     cpack_submit,		 []).
+:- http_handler(cpack_api(resubmit),	     cpack_resubmit,		 []).
+:- http_handler(cpack_api(clone_server),     cpack_clone_server,	 []).
+:- http_handler(cpack_api(refresh_metadata), cpack_refresh_metadata_api, []).
+:- http_handler(cpack(show_file),	     cpack_show_file,		 []).
+:- http_handler(cpack(git_show),	     git_show,			 []).
 
 /** <module> User interaction to manage CPACKS
 */
@@ -296,3 +297,15 @@ cpack_clone_server(Request) :-
 	user_property(User, url(UserURL)),
 	call_showing_messages(cpack_clone_server(UserURL, ServerURL, []),
 			      []).
+
+
+%%	cpack_refresh_metadata_api(+Request)
+%
+%	API to reload all metadata.
+
+cpack_refresh_metadata_api(_Request) :-
+	authorized(write(cpack, refresh_metadata)),
+	call_showing_messages(cpack_refresh_metadata,
+			      []).
+
+
