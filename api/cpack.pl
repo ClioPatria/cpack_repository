@@ -207,10 +207,16 @@ file_option(URI, size(Bytes)) :-
 %
 %	Provide data necessary to clone a repository. Currently, we only
 %	clone the repositories. The user that  performs the clone is the
-%	submitter of the cloned data.
+%	submitter of the cloned data. We  try to order the dependencies,
+%	but on failure  we  provided  the   unsorted  package  to  allow
+%	debugging on the clone.
 
 cpack_clone_data(_Request) :-
-	findall(Pack, rdfs_individual_of(Pack, cpack:'Package'), Packs),
+	findall(Pack, rdfs_individual_of(Pack, cpack:'Package'), Packs0),
+	(   catch(cpack_list(Packs0, Packs), error(domain_error(_,_),_), fail)
+	->  true
+	;   Packs = Packs0
+	),
 	maplist(pack_info(clone), Packs, Data),
 	format('Content-type: application/x-prolog~n~n'),
 	format('% Server clone data~n~n', []),
