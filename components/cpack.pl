@@ -247,7 +247,7 @@ td_git_log(Pack, subject_and_refnames, Record) --> !,
 	  http_link_to_id(git_show, [a(commit),h(Commit),r(Pack)], HREF)
 	},
 	html(td(class(subject),
-		[ a(href(HREF), Subject), \ref_names(RefNames)])).
+		[ a(href(HREF), \trunc(Subject, 50)), \ref_names(RefNames)])).
 td_git_log(_, Field, Record) -->
 	{ git_log_data(Field, Record, Value),
 	  (   Value == ''
@@ -264,6 +264,10 @@ ref_names(List) -->
 ref_name_list([]) --> [].
 ref_name_list([H|T]) -->
 	html(span(class(ref_name), H)), ref_name_list(T).
+
+trunc(Text, Max) -->
+	{ truncate_atom(Text, Max, Show) },
+	html(Show).
 
 
 %%	commit_info(+Pack, +Hash, +Options)//
