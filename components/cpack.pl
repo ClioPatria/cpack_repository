@@ -889,7 +889,9 @@ representer(R, R).
 literal(literal(type(Type, Value))) -->
 	{ rdf_equal(Type, xsd:dateTime),
 	  parse_time(Value, Time), !,
-	  format_time(atom(Human), '%+', Time)
+	  format_time(atom(Human),
+		      '%a, %d %b %Y %T %Z',
+		      Time)
 	},
 	html(Human).
 literal(O) -->
