@@ -32,7 +32,8 @@
 :- include(bundle(html_page)).
 :- use_module(components(cpack)).
 
-:- http_handler(root(home), cpack_home, [id(home), priority(10)]).
+:- http_handler(root(cpack_home), cpack_home,      []).
+:- http_handler(root(home),       cliopatria_home, [id(home), priority(10)]).
 
 %%	cpack_home(+Request)
 %
@@ -52,3 +53,12 @@ cpack_home(Request) :-
 			    [ \insert_html_file(html('cpack_home.html')),
 			      \package_table([sort_by(By)])
 			    ])).
+
+%%	cliopatria_home(+Request)
+%
+%	HTTP handler that provides the ClioPatria welcome page.
+
+cliopatria_home(_Request) :-
+	reply_html_page(cliopatria(cpack),
+			title('ClioPatria: the SWI-Prolog RDF toolkit'),
+			\insert_html_file(html('cliopatria_home.html'))).

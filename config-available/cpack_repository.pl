@@ -17,6 +17,7 @@ http:location(cpack, root(cpack), []).
 cliopatria:menu_popup_order(cpack, 250).
 cliopatria:menu_label(cpack, 'CPACK').
 
+cliopatria:menu_item( 50=cpack/cpack_home,	 	   'Home').
 cliopatria:menu_item(100=cpack/cpack_list_packages,	   'List packs').
 cliopatria:menu_item(200=cpack/cpack_submit_form,	   'Submit pack').
 cliopatria:menu_item(300=cpack/cpack_clone_server_form,	   'Clone server') :-
