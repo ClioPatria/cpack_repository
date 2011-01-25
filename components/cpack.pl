@@ -75,8 +75,10 @@ cliopatria:list_resource(Pack) -->
 
 %%	package_table(Options)// is det.
 %
-%	Emit a table that describes Packages.   Options is currently not
-%	used.
+%	Emit a table that describes Packages.   Options supported:
+%
+%	    * sort_by(Column)
+%	    Sort table by given column.
 
 package_table(Options) -->
 	{ option(sort_by(By), Options, name),
@@ -89,7 +91,8 @@ package_table(Options) -->
 			  \sort_th(name,   By, 'Name'),
 			  \sort_th(title,  By, 'Title'),
 			  \sort_th(type,   By, 'Type'),
-			  \sort_th(author, By, 'Author')
+			  \sort_th(author, By, 'Author'),
+			  \sort_th(date,   By, 'Date')
 			])
 		   | \package_rows(Packages, 1, Options)
 		   ])).
@@ -117,7 +120,9 @@ package_row(Package, _Options) -->
 	       td(class(type),
 		  div(\cpack_prop(Package, rdf:type))),
 	       td(class(author),
-		  div(\cpack_prop(Package, cpack:author)))
+		  div(\cpack_prop(Package, cpack:author))),
+	       td(class(date),
+		  div(\cpack_prop(Package, cpack:submittedDate)))
 	     ]).
 
 
@@ -161,6 +166,11 @@ cpack_sort_key(author, Pack, Key) :-
 		collation_key(Title, Key)
 	    ;   Key = Author
 	    )
+	;   Key = ''
+	).
+cpack_sort_key(date, Pack, Key) :-
+	(   rdf_has(Pack, cpack:submittedDate, Key)
+	->  true
 	;   Key = ''
 	).
 

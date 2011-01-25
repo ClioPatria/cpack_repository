@@ -166,7 +166,7 @@ cpack_my_packages(Request) :-
 list_packages(Request, Options) :-
 	http_parameters(Request,
 			[ sort_by(By,
-				  [ oneof([status,name,title,type,author]),
+				  [ oneof([status,name,title,type,author,date]),
 				    default(name),
 				    description('Sort table by this key')
 				  ])

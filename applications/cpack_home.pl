@@ -42,7 +42,7 @@
 cpack_home(Request) :-
 	http_parameters(Request,
 			[ sort_by(By,
-				  [ oneof([status,name,title,type,author]),
+				  [ oneof([status,name,title,type,author,date]),
 				    default(name),
 				    description('Sort table by this key')
 				  ])

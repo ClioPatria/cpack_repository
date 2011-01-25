@@ -20,6 +20,11 @@ div.cpack td.author div
   text-overflow: ellipsis;
 }
 
+div.cpack td.date div
+{ font-family: monospace;
+  font-size: 80%;
+}
+
 
 /* Package page */
 
