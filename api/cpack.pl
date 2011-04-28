@@ -213,7 +213,7 @@ file_option(URI, size(Bytes)) :-
 
 cpack_clone_data(_Request) :-
 	findall(Pack, rdfs_individual_of(Pack, cpack:'Package'), Packs0),
-	(   catch(cpack_list(Packs0, Packs), error(domain_error(_,_),_), fail)
+	(   catch(cpack_list(Packs0, Packs), _, fail)
 	->  true
 	;   Packs = Packs0
 	),
