@@ -338,7 +338,10 @@ file_calls_public_from(File, UsedFile, PI) :-
 	;   atom_to_term(PI, M:PPI, []),
 	    rdf_has(UsedFile, cpack:module, literal(M)),
 	    format(atom(Plain), '~q', [PPI]),
-	    rdf_has(UsedFile, cpack:exportsPredicate, literal(Plain))
+	    (	rdf_has(UsedFile, cpack:exportsPredicate, literal(Plain))
+	    ->	true
+	    ;	rdf_has(UsedFile, cpack:publicPredicate, literal(Plain))
+	    )
 	),
 	(   rdf_has(File, cpack:usesFile, UsedFile)
 	->  true
