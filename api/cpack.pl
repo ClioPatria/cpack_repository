@@ -89,7 +89,7 @@ cpack_install_data(Request) :-
 	memberchk(path_info(PackName), Request), !,
 	(   rdf_has(Pack, cpack:packageName, literal(PackName))
 	->  reply_install_data(PackName, [Pack])
-	;   reply(PackName, no_pack(PackName))
+	;   reply(PackName, no_cpack(PackName))
 	).
 cpack_install_data(Request) :-
 	http_parameters(Request,
