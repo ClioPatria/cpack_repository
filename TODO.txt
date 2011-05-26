@@ -1,18 +1,11 @@
 ---+ Thoughts and issues
 
-Wishlist:
+---++ Wishlist:
 
   * Allow owner/user to overrule problems (notably undefined
     predicates).
 
-  * When updating/accepting a package, do some sanity checks
-    first.
-
-      - Fetch into new branch (e.g. eval):
-
-	  % git fetch origin master:eval
-	  <evaluate, and if ok>
-	  % git branch -M eval master
+  * Enhance author interface for updating packages.
 
   * Removing packages.  Notably, we need to keep track of the
     config files, so that we can delete them.  We can base that
@@ -30,7 +23,36 @@ Wishlist:
   * Allow users to trust each other and/or allow them to
     give other users the right to update a repository.
 
-Long term:
+---++ Git versioning issues
+
+Currently, the cpack-mirror  is  a  _mirror_   repo  from  the  author's
+repository. This means that a 'git fetch'   in  the cpack server updates
+all heads forcefully to the author's  version.   There  are  a number of
+scenarios that require attention:
+
+---+++ The author submitted a broken version
+
+One possible solution is to add a  tag   after  we do a pull. This would
+allow us to step back using:
+
+  ==
+  git branch -f master <tag>
+  ==
+
+An alternative is to have a  branch   =cpack=,  which  is updated to the
+desired branch or tag after the author   analysed the consistency of the
+target point.
+
+---+++ Dealing with local changes for users
+
+Current approach does
+
+  ==
+  git fetch
+  git merge origin/master
+  ==
+
+---++ Long term:
 
   * Rating system
   * Trust model
