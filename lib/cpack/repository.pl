@@ -179,6 +179,7 @@ update_metadata(BareGitPath, Graph, Options) :-
 	;   true
 	),
 	foaf_merge(_),
+	set_prolog_flag(message_ide, false),	% do not expose messages
 	xref_cpack(Graph).
 
 add_timestamp(Graph, Options) :-
@@ -494,6 +495,8 @@ cpack_our_mirror(Pack, BareGitPath) :-
 
 :- record
 	git_log(commit_hash:atom,
+		author_name:atom,
+		author_date_relative:atom,
 		committer_name:atom,
 		committer_date_relative:atom,
 		subject:atom,
