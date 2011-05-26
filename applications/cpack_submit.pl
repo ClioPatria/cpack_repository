@@ -124,6 +124,9 @@ cpack_resubmit(Request) :-
 			[ pack(Pack,
 			       [ description('URI of the CPACK to update')
 			       ]),
+			  branch(Branch,
+				 [ description('Branch to update from')
+				 ]),
 			  return_to(ReturnTo,
 				    [ optional(true),
 				      description('Return link')
@@ -137,14 +140,17 @@ cpack_resubmit(Request) :-
 	->  MsgOptions = []
 	;   MsgOptions = [return_to(ReturnTo)]
 	),
-	findall(O, submit_option(User, Pack, O), RepoOptions),
+	findall(O, submit_option(User, Pack, Branch, O), RepoOptions),
 	call_showing_messages(cpack_add_repository(UserURL, GitURL, RepoOptions),
 			      MsgOptions).
 
-submit_option(_User, Pack, branch(Branch)) :-
-	rdf_has(Pack, cpack:clonedRepository, GitRepo),
-	rdf_has(GitRepo, cpack:branch, literal(Branch)).
-submit_option(User, _Pack, allowed(true)) :-
+submit_option(_User, Pack, Branch, branch(Branch)) :-
+	(   var(Branch)
+	->  rdf_has(Pack, cpack:clonedRepository, GitRepo),
+	    rdf_has(GitRepo, cpack:branch, literal(Branch))
+	;   true
+	).
+submit_option(User, _Pack, _Branch, allowed(true)) :-
 	catch(check_permission(User, admin(cpack)), _, fail).
 
 
