@@ -46,6 +46,8 @@
 :- use_module(library(git)).
 :- use_module(library(uri)).
 :- use_module(library(settings)).
+:- use_module(library(option)).
+:- use_module(library(error)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_turtle)).
 :- use_module(library(semweb/rdf_label)).
