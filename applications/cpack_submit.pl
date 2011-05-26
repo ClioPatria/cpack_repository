@@ -124,25 +124,43 @@ cpack_resubmit(Request) :-
 			[ pack(Pack,
 			       [ description('URI of the CPACK to update')
 			       ]),
-			  branch(Branch,
-				 [ description('Branch to update from')
+			  giturl(GitURL,
+				 [ optional(true),
+				   description('GIT URL to pull from')
 				 ]),
+			  branch(Branch,
+				 [ optional(true),
+				   description('Branch to update from')
+				 ]),
+			  confirm(Confirm,
+				  [ boolean,
+				    default(true),
+				    description('Present confirmation screen')
+				  ]),
 			  return_to(ReturnTo,
 				    [ optional(true),
 				      description('Return link')
 				    ])
 			]),
-	rdf_has(Pack, cpack:clonedRepository, GitRepo),
-	rdf_has(GitRepo, cpack:gitURL, GitURL),
-	authorized(write(cpack, GitURL)),
+	authorized(write(cpack, Pack)),
+	(   var(GitURL)
+	->  rdf_has(Pack, cpack:clonedRepository, GitRepo),
+	    rdf_has(GitRepo, cpack:gitURL, GitURL)
+	;   true
+	),
 	user_property(User, url(UserURL)),
 	(   var(ReturnTo)
 	->  MsgOptions = []
 	;   MsgOptions = [return_to(ReturnTo)]
 	),
 	findall(O, submit_option(User, Pack, Branch, O), RepoOptions),
-	call_showing_messages(cpack_add_repository(UserURL, GitURL, RepoOptions),
-			      MsgOptions).
+	(   Confirm == true
+	->  reply_html_page(cliopatria(cpack),
+			    title('Pull new version'),
+			    \pull_version_form(Pack, GitURL, RepoOptions, MsgOptions))
+	;   call_showing_messages(cpack_add_repository(UserURL, GitURL, RepoOptions),
+				  MsgOptions)
+	).
 
 submit_option(_User, Pack, Branch, branch(Branch)) :-
 	(   var(Branch)
@@ -152,6 +170,50 @@ submit_option(_User, Pack, Branch, branch(Branch)) :-
 	).
 submit_option(User, _Pack, _Branch, allowed(true)) :-
 	catch(check_permission(User, admin(cpack)), _, fail).
+
+
+%%	pull_version_form(+Pack, +GitURL, +RepoOptions, +MsgOptions)// is det.
+%
+%	Present a form to confirm for pulling a new version.
+
+pull_version_form(Pack, GitURL, RepoOptions, MsgOptions) -->
+	{ git_remote_branches(GitURL, Branches),
+	  option(branch(Branch), RepoOptions, master)
+	},
+	html([ h1('Pull new version'),
+	       form(action(location_by_id(cpack_resubmit)),
+		    [ \hidden(confirm, false),
+		      \hidden(pack, Pack),
+		      \pull_options(MsgOptions),
+		      table(class(form),
+			    [ \form_input('GIT repository:',
+					  input([ name(giturl),
+						  size(50),
+						  value(GitURL)
+						])),
+			      \form_input('Branch:',
+					  \select_branch(Branches, Branch)),
+			      \form_submit('Pull new version')
+			    ])
+		    ])
+	     ]).
+
+pull_options(MsgOptions) -->
+	{ option(return_to(Return), MsgOptions)
+	}, !,
+	hidden(return_to, Return).
+pull_options(_) --> [].
+
+select_branch(Branches, Default) -->
+	html(select(name(branch), \list_branches(Branches, Default))).
+
+list_branches([], _) --> [].
+list_branches([H|T], H) --> !,
+	html(option([value(H),selected], H)),
+	list_branches(T, H).
+list_branches([H|T], D) --> !,
+	html(option(value(H), H)),
+	list_branches(T, D).
 
 
 %%	cpack_list_packages(+Request) is det.
