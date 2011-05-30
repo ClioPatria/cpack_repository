@@ -1,6 +1,14 @@
 ---+ Thoughts and issues
 
----++ Wishlist:
+---++ Port
+
+  * Avoid the need for links by creating a file that loads the real
+    file:
+
+	:- module(win_link_<orig_module>, []).
+	:- reexport(<path-to-orig-module).
+
+---++ Wishlist
 
   * Allow owner/user to overrule problems (notably undefined
     predicates).
