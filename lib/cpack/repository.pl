@@ -83,6 +83,7 @@
 %	    Add the given branch rather than the master
 
 cpack_add_repository(User, URL, Options) :-
+	git_check_url(URL),
 	url_package(URL, Package),
 	package_graph(Package, Graph),
 	file_name_extension(Package, git, BareGit),
@@ -96,6 +97,28 @@ cpack_add_repository(User, URL, Options) :-
 	    update_metadata(BareGitPath, Graph,
 			    [user(User),cloned(URL)|Options])
 	).
+
+%%	git_check_url(+URL) is det.
+%
+%	Verify that the URL  is  either   git://,  http://  or https://.
+%	Notaby, avoid SSH URLs that would make the ClioPatria server try
+%	ssh connections that would normally not be allowed.
+%
+%	@error(permission_error(add_repository_from, url, URL)
+
+git_check_url(URL) :-
+	uri_components(URL, Components),
+	uri_data(scheme, Components, Scheme),
+	safe_scheme(Scheme), !.
+git_check_url(URL) :-
+	permission_error(add_repository_from,
+			 url,
+			 URL).
+
+safe_scheme(git).
+safe_scheme(http).
+safe_scheme(https).
+
 
 %%	cpack_update_package(+User, +Package) is det.
 %

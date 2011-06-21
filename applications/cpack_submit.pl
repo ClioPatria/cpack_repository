@@ -71,6 +71,7 @@ cpack_submit_form(_Request) :-
 			[ title('Submit repository to CPACK')
 			],
 			[ h1('Submit repository to CPACK'),
+			  \explain_submit,
 			  form([ action(location_by_id(cpack_submit))
 			       ],
 			       table(class(form),
@@ -86,6 +87,13 @@ cpack_submit_form(_Request) :-
 				       \form_submit('Register')
 				     ]))
 			]).
+
+explain_submit -->
+	html(p([ 'Please enter a valid GIT URL from which the CPACK manager ',
+		 'can clone the package.  The URL must be a git://, http:// or ',
+		 'https:// URL.  Notably SSH URLs are not allowed.'
+	       ])).
+
 
 %%	cpack_submit(+Request)
 %
