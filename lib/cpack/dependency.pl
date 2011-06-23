@@ -33,6 +33,7 @@
 	    cpack_requires/3,		% +Package, -Package, -Why
 	    cpack_conflicts/3,		% +Package, -Package, -Why
 	    cpack_list/2,		% +Package, -ListOfImplied
+	    cpack_list/3,		% +Package, -ListOfImplied, -Dependencies
 	    cpack_not_satisfied/2,	% +Package, -Reasons
 	    file_not_satisfied/2,	% +File, -Reasons
 	    file_imports_from/3,	% +File, -Imports, -From
@@ -136,12 +137,15 @@ cpack_conflicts_by(Package, Conflict, same_file(Path,File1,File2)) :-
 		 *******************************/
 
 %%	cpack_list(+Pack, -PackList) is det.
+%%	cpack_list(+Pack, -PackList, -UGraph) is det.
 %
 %	PackList is a list of all packages  that need to be installed to
 %	get Pack working. This list is ensured to contain Pack.
 %
 %	@param	Pack is either the URI of a single Pack or a list of
 %		these.
+%	@param	UGraph is a ugraph of Pack-ListOfRequired. See
+%		library(ugraph) for details.
 %
 %	@tbd	Toplogical sorting may not be possible.  As ordering is
 %		not always necessary, we should try to relax
@@ -151,6 +155,9 @@ cpack_conflicts_by(Package, Conflict, same_file(Path,File1,File2)) :-
 %		second, libraries must be loaded before applications.
 
 cpack_list(Pack, Packs) :-
+	cpack_list(Pack, Packs, _).
+
+cpack_list(Pack, Packs, Ugraph) :-
 	dependency_ugraph(Pack, Ugraph),
 	(   sort_dependencies(Ugraph, Packs)
 	->  check_conflicts(Packs),

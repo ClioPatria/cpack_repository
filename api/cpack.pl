@@ -155,17 +155,23 @@ client_error(Term0, Term) :-
 %	    * files(ListOfFile)
 %	    Each file is a term file(Path, Options), where options is
 %	        - module(Module)
+%	    * requires(ListOfPackages)
 
 pack_install_data(Pack, Data) :-
-	cpack_list(Pack, List),
-	maplist(pack_info(install), List, Data).
+	cpack_list(Pack, List, Dependencies),
+	maplist(pack_info(install, Dependencies), List, Data).
 
-pack_info(Type, Pack, cpack(Name, Options)) :-
+pack_info(Type, Dependencies, Pack, cpack(Name, Options)) :-
 	rdf_has(Pack, cpack:packageName, literal(Name)),
+	memberchk(Pack-PackDeps, Dependencies),
+	maplist(pack_name, PackDeps, PackDepNames),
 	findall(O, ( pack_option(Pack, O, Types),
 		     memberchk(Type, Types)
 		   ),
-		Options).
+		Options, [requires(PackDepNames)]).
+
+pack_name(Pack, Name) :-
+	rdf_has(Pack, cpack:packageName, literal(Name)), !.
 
 pack_option(Pack, url(Pack), [install]).
 pack_option(Pack, title(Title), [install]) :-
@@ -213,11 +219,11 @@ file_option(URI, size(Bytes)) :-
 
 cpack_clone_data(_Request) :-
 	findall(Pack, rdfs_individual_of(Pack, cpack:'Package'), Packs0),
-	(   catch(cpack_list(Packs0, Packs), _, fail)
+	(   catch(cpack_list(Packs0, Packs, Dependencies), _, fail)
 	->  true
 	;   Packs = Packs0
 	),
-	maplist(pack_info(clone), Packs, Data),
+	maplist(pack_info(clone, Dependencies), Packs, Data),
 	format('Content-type: application/x-prolog~n~n'),
 	format('% Server clone data~n~n', []),
 	maplist(write_clause, Data).
