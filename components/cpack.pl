@@ -869,7 +869,7 @@ cpack_prop(R, P0) -->
 	},
 	(   { rdf_is_literal(O) }
 	->  literal(O)
-	;   cpack_link(O)
+	;   cpack_link(O, P)
 	).
 cpack_prop(_, _) --> [].
 
@@ -906,16 +906,16 @@ literal(O) -->
 %	can be used to select a given property for producing the label.
 
 :- rdf_meta
-	cpack_label_property(r).
+	cpack_label_property(r),
+	cpack_external_link(r).
 
 cpack_link(R) -->
 	cpack_link(R, '-').
 
 cpack_link(R, P0) -->
-	{ (   P0 \== (-),
-	      rdf_global_id(P0, P)
-	  ;   cpack_label_property(P)
-	  ),
+	{ P0 \== (-),
+	  rdf_global_id(P0, P),
+	  cpack_label_property(P),
 	  rdf_has(R, P, Name), !,
 	  literal_text(Name, Text),
 	  resource_link(R, HREF)
@@ -926,12 +926,17 @@ cpack_link(L, _) -->
 	  literal_text(L, Text)
 	},
 	html(Text).
+cpack_link(R, P) -->
+	{ cpack_external_link(P) }, !,
+	html(a(href(R),R)).
 cpack_link(R, _) -->
 	rdf_link(R).
 
 cpack_label_property(cpack:name).
 cpack_label_property(foaf:name).
 cpack_label_property(rdfs:label).
+
+cpack_external_link(cpack:home).
 
 
 		 /*******************************
