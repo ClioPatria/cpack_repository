@@ -198,6 +198,7 @@ cpack(Pack, _Options) -->
 		      ]),
 		   table(class(infobox),
 			 [ \p_row(Pack, rdf:type),
+			   \p_row(Pack, cpack:home),
 			   \p_row(Pack, cpack:author),
 			   \p_row(Pack, cpack:submittedBy),
 			   \p_row(Pack, cpack:submittedDate),
