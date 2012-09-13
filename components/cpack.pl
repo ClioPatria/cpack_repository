@@ -724,7 +724,7 @@ import_from_file(File-Predicates) -->
 imported_predicate_list(File, []) -->
 	{ rdf_has(File, cpack:exportsPredicate, _) }, !,
 	html([' ', span([ class(msg_warning),
-			  title('Prolog cross-reference analysis is \
+			  title('Prolog cross-reference analysis is \c
 			         incomplete, so this is not proof of an error')
 			],
 			'could not find proof of dependency')]).
