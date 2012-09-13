@@ -56,7 +56,7 @@
 :- use_module(library(http/http_host)).
 :- use_module(library(http/http_path)).
 :- use_module(library(http/http_open)).
-:- use_module(library(http/dcg_basics)).
+:- use_module(library(dcg/basics)).
 :- use_module(user(user_db)).
 :- use_module(library(foaf_schema)).
 :- use_module(xref).

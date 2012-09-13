@@ -40,7 +40,7 @@
 :- include(bundle(html_page)).
 :- use_module(user(user_db)).
 :- use_module(library(http/http_path)).
-:- use_module(library(http/dcg_basics)).
+:- use_module(library(dcg/basics)).
 :- use_module(library(cpack/repository)).
 :- use_module(library(cpack/dependency)).
 :- use_module(library(semweb/rdf_db)).
