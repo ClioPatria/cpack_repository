@@ -37,7 +37,6 @@
 	    cpack_clone_server/3,	% +User, +Server, +Options)
 	    cpack_uri/3,		% +Type, +Object, -URI
 	    cpack_log/3,		% +Package, -ShortLog, +Options
-	    git_log_data/3,		% ?Field, ?Record, ?Data
 	    cpack_show/4,		% +Package, +Hash, -Data, +Options
 	    commit_data/3		% ?Field, ?Record, ?Data
 	  ]).
@@ -513,74 +512,15 @@ cpack_our_mirror(Pack, BareGitPath) :-
 %
 %	    * limit(+Count)
 %	    Maximum number of commits to show (default is 10)
-%	    * path(+Path)
+%	    * git_path(+Path)
 %	    Only show commits that affect Path
 %
-%	@param ShortLog is a list of =git_log= records.
-
-:- record
-	git_log(commit_hash:atom,
-		author_name:atom,
-		author_date_relative:atom,
-		committer_name:atom,
-		committer_date_relative:atom,
-		subject:atom,
-		ref_names:list).
+%	@param	ShortLog is a list of =git_log= records. See
+%		git_shortlog/3.
 
 cpack_log(Pack, ShortLog, Options) :-
-	option(limit(Limit), Options, 10),
-	(   option(path(Path), Options)
-	->  Extra = ['--', Path]
-	;   Extra = []
-	),
 	cpack_our_mirror(Pack, BareGitPath),
-	git_format_string(git_log, Fields, Format),
-	git_process_output([ log, '-n', Limit, Format
-			   | Extra
-			   ],
-			   read_git_formatted(git_log, Fields, ShortLog),
-			   [directory(BareGitPath)]).
-
-
-read_git_formatted(Record, Fields, ShortLog, In) :-
-	read_line_to_codes(In, Line0),
-	read_git_formatted(Line0, In, Record, Fields, ShortLog).
-
-read_git_formatted(end_of_file, _, _, _, []).
-read_git_formatted(Line, In, Record, Fields, [H|T]) :-
-	record_from_line(Record, Fields, Line, H),
-	read_line_to_codes(In, Line1),
-	read_git_formatted(Line1, In, Record, Fields, T).
-
-record_from_line(RecordName, Fields, Line, Record) :-
-	phrase(fields_from_line(Fields, Values), Line),
-	Record =.. [RecordName|Values].
-
-fields_from_line([], []) --> [].
-fields_from_line([F|FT], [V|VT]) -->
-	to_nul_s(Codes),
-	{ field_to_prolog(F, Codes, V) },
-	fields_from_line(FT, VT).
-
-to_nul_s([]) --> [0], !.
-to_nul_s([H|T]) --> [H], to_nul_s(T).
-
-field_to_prolog(ref_names, Line, List) :-
-	phrase(ref_names(List), Line), !.
-field_to_prolog(_, Line, Atom) :-
-	atom_codes(Atom, Line).
-
-ref_names([]) --> [].
-ref_names(List) -->
-	blanks, "(", ref_name_list(List), ")".
-
-ref_name_list([H|T]) -->
-	string_without(",)", Codes),
-	{ atom_codes(H, Codes) },
-	(   ",", blanks
-	->  ref_name_list(T)
-	;   {T=[]}
-	).
+	git_shortlog(BareGitPath, ShortLog, Options).
 
 
 %%	cpack_show(+Pack, +Hash, -Commit) is det.
@@ -639,6 +579,36 @@ read_n_lines(Line, Max0, In, [Line|More]) :-
 	Max is Max0-1,
 	read_n_lines(Line2, Max, In, More).
 
+
+record_from_line(RecordName, Fields, Line, Record) :-
+	phrase(fields_from_line(Fields, Values), Line),
+	Record =.. [RecordName|Values].
+
+fields_from_line([], []) --> [].
+fields_from_line([F|FT], [V|VT]) -->
+	to_nul_s(Codes),
+	{ field_to_prolog(F, Codes, V) },
+	fields_from_line(FT, VT).
+
+to_nul_s([]) --> [0], !.
+to_nul_s([H|T]) --> [H], to_nul_s(T).
+
+field_to_prolog(ref_names, Line, List) :-
+	phrase(ref_names(List), Line), !.
+field_to_prolog(_, Line, Atom) :-
+	atom_codes(Atom, Line).
+
+ref_names([]) --> [].
+ref_names(List) -->
+	blanks, "(", ref_name_list(List), ")".
+
+ref_name_list([H|T]) -->
+	string_without(",)", Codes),
+	{ atom_codes(H, Codes) },
+	(   ",", blanks
+	->  ref_name_list(T)
+	;   {T=[]}
+	).
 
 %%	git_format_string(+Record, -FieldNames, -Format)
 %

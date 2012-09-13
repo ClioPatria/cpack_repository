@@ -583,7 +583,7 @@ cpack_file(FileURL, _Options) -->
 			   \p_row(FileURL, cpack:size)
 			 ]),
 		   br(clear(all)),
-		   \git_shortlog(Pack, [limit(5), path(Path)]),
+		   \git_shortlog(Pack, [limit(5), git_path(Path)]),
 		   \prolog_file(FileURL)
 		 ])).
 
