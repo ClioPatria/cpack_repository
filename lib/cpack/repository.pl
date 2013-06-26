@@ -328,15 +328,16 @@ load_meta_data(BareGitPath, Graph, Options) :-
 	url_package(BareGitPath, Package),
 	format(atom(File), '~w:rdf/cpack/~w.ttl', [Branch, Package]),
 	git_process_output([show, File],
-			   rdf_load_git_stream(Graph, turtle),
+			   rdf_load_git_stream(Graph),
 			   [directory(BareGitPath)]).
 
-rdf_load_git_stream(Graph, Format, In) :-
+rdf_load_git_stream(Graph, In) :-
 	set_stream(In, file_name(Graph)),
+	atom_concat('__', Graph, BNodePrefix),
 	rdf_read_turtle(stream(In),
 			RDF,
 			[ base_uri(Graph),
-			  format(Format)
+			  anon_prefix(BNodePrefix)
 			]),
 	forall(member(rdf(S,P,O), RDF),
 	       rdf_assert(S,P,O,Graph)).
