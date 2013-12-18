@@ -46,9 +46,11 @@
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(semweb/rdf_label)).
+:- use_module(library(pldoc/doc_wiki)).
+:- use_module(library(pldoc/doc_html)).
 :- use_module(components(label)).
 :- use_module(cliopatria(hooks)).
-:- use_module('cpack/graphs').
+:- use_module(cpack/graphs).
 
 /** <module> CPACK HTML components
 
@@ -209,7 +211,7 @@ cpack(Pack, _Options) -->
 			 ]),
 		   br([class('after-ptable')]),
 		   div(class(description),
-		       \cpack_prop(Pack, cpack:description)),
+		       \cpack_wiki(Pack, cpack:description)),
 		   br(clear(all)),
 		   \cpack_issues(Pack, Problems),
 		   \git_shortlog(Pack, [limit(5)]),
@@ -873,6 +875,21 @@ cpack_prop(R, P0) -->
 	).
 cpack_prop(_, _) --> [].
 
+%%	cpack_wiki(+Resource, +Property)
+%
+%	Display the value of  Property  for   Resource  in  the  current
+%	location, where the value is represented in wiki format.
+
+
+cpack_wiki(R, P0) -->
+	{ rdf_global_id(P0, P),
+	  rdf_has(R, P, O),
+	  rdf_is_literal(O)
+	}, !,
+	wiki(O).
+cpack_wiki(_, _) --> [].
+
+
 %%	representer(+R0, -R) is det.
 %
 %	Find representers among equivalent objects.  This deals with the
@@ -898,6 +915,20 @@ literal(literal(type(Type, Value))) -->
 literal(O) -->
 	{ literal_text(O, Text) },
 	html(Text).
+
+%%	wiki(O)//
+%
+%	Render text as Wiki
+
+wiki(L) -->
+	{ literal_text(L, Text),
+	  atom_codes(Text, Codes),
+	  wiki_codes_to_dom(Codes, [], DOM)
+	},
+	html_requires(pldoc),
+	html(DOM).
+
+
 
 %%	cpack_link(+R)// is det.
 %%	cpack_link(+R, +P)// is det.
