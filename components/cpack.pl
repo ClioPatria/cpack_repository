@@ -337,10 +337,17 @@ diff_lines([Line|T], Diff) -->
 	    diff_lines(T, Diff)
 	).
 
+:- if(current_predicate(string_codes/2)).
+term_expansion(diff_line_class(Start, Diff, Class),
+	       diff_line_class(Codes, Diff, Class)) :-
+	string_codes(Start, ClosedCodes),
+	append(ClosedCodes, _, Codes).
+:- else.
 term_expansion(diff_line_class(Start, Diff, Class),
 	       diff_line_class(Codes, Diff, Class)) :-
 	is_list(Start),
 	append(Start, _, Codes).
+:- endif.
 
 diff_line_class("diff ", patch, diff).
 diff_line_class("--- ", patch, a).
@@ -363,12 +370,14 @@ dirstat(File, Sep, [D0|RD], Plusses, Minus) -->
 	string(Sep),
 	digit(D0),digits(RD),
 	" ",
-	codes("+", Plusses),
-	codes("-", Minus).
+	plusses(Plusses),
+	minuss(Minus).
 
-codes(Set, [H|T]) --> [H], { memberchk(H, Set) }, !, codes(Set, T).
-codes(_, []) --> [].
+plusses([0'+|T]) --> "+", !, plusses(T).
+plusses([]) --> [].
 
+minuss([0'+|T]) --> "-", !, minuss(T).
+minuss([]) --> [].
 
 tr_commit(Label, Field, Record) -->
 	{ commit_data(Field, Record, Value) },
