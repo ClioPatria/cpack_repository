@@ -50,7 +50,7 @@
 :- use_module(library(pldoc/doc_html)).
 :- use_module(components(label)).
 :- use_module(cliopatria(hooks)).
-:- use_module(cpack/graphs).
+:- use_module('cpack/graphs').
 
 /** <module> CPACK HTML components
 
