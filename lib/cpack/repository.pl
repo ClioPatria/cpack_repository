@@ -149,9 +149,10 @@ cpack_update_repository(User, URL, Options) :-
 	file_name_extension(PackageName, git, BareGit),
 	setting(cpack:mirrors, MirrorDir),
 	directory_file_path(MirrorDir, BareGit, BareGitPath),
-	git_hash(BareGitPath, Branch, Hash0),
-	git([fetch, origin], [directory(BareGitPath)]),
-	git_hash(BareGitPath, Branch, Hash1),
+	git_hash(BareGitPath, master, Hash0),
+	atomic_list_concat([Branch, master], :, BranchSpec),
+	git([fetch, URL, BranchSpec], [directory(BareGitPath)]),
+	git_hash(BareGitPath, master, Hash1),
 	print_message(informational, cpack(updated(Graph, Hash0, Hash1))),
 	(   (   Hash1 \== Hash0
 	    ;	option(update_metadata(always), Options, always)
