@@ -135,7 +135,11 @@ package_row(Package, _Options) -->
 sort_packages(Key, Packs, Sorted) :-
 	map_list_to_pairs(cpack_sort_key(Key), Packs, Keyed),
 	keysort(Keyed, KeySorted),
-	pairs_values(KeySorted, Sorted).
+	pairs_values(KeySorted, Sorted0),
+	(   Key == date % sort on date by most recent first
+	->  reverse(Sorted0, Sorted)
+	;   Sorted = Sorted0
+	).
 
 %%	cpack_sort_key(+KeyName, +CPACK, -KeyValue) is det.
 %
