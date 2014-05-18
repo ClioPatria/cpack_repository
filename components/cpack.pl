@@ -85,7 +85,8 @@ cliopatria:list_resource(Pack) -->
 package_table(Options) -->
 	{ option(sort_by(By), Options, name),
 	  findall(Package, current_package(Package, Options), List),
-	  sort_packages(By, List, Packages)
+	  sort(List, ListUniq),
+	  sort_packages(By, ListUniq, Packages)
 	},
 	html_requires(css('cpack.css')),
 	html(table(class(block),
