@@ -278,7 +278,16 @@ read_files(Graph, In) :-
 
 read_files(end_of_file, _, _) :- !.
 read_files(Line, Graph, In) :-
-	phrase(file_l(_Mode, _Type, _Hash, Size, FileName), Line),
+	(   read_file(Line, Graph)
+	->  true
+	;   gtrace,
+	    read_file(Line, Graph)
+	),
+	read_line_to_codes(In, Line2),
+	read_files(Line2, Graph, In).
+
+read_file(Line, Graph) :-
+	phrase(file_l(_Mode, _Type, _Hash, Size, FileName), Line), !,
 	atom_number(SizeAtom, Size),
 	file_base_name(FileName, BaseName),
 	file_base(FileName , BaseID),
@@ -289,9 +298,10 @@ read_files(Line, Graph, In) :-
 	rdf_assert(File, cpack:base, literal(BaseID), Graph),
 	rdf_assert(File, cpack:size, literal(type(xsd:integer, SizeAtom)), Graph),
 	rdf_assert(File, cpack:inPack, Graph, Graph),
-	rdf_assert(File, rdf:type, Class, Graph),
-	read_line_to_codes(In, Line2),
-	read_files(Line2, Graph, In).
+	rdf_assert(File, rdf:type, Class, Graph).
+read_file(Line, _Graph) :-
+	string_codes(String, Line),
+	print_message(warning, cpack(ignored_git_entry(String))).
 
 file_base(Path, Base) :-
 	file_base_name(Path, File),
@@ -700,6 +710,8 @@ prolog:message(cpack(updated(Graph, Hash0, Hash1))) -->
 	).
 prolog:message(cpack(clone(Name, _Options))) -->
 	[ 'Cloning CPACK ~w ...'-[Name] ].
+prolog:message(cpack(ignored_git_entry(Line))) -->
+	[ 'Ignored GIT entry "~s"'-[Line] ].
 
 package_name(Graph) -->
 	{ rdf_has(Graph, cpack:name, Literal),
