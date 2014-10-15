@@ -384,6 +384,15 @@ prolog:xref_source_file(Spec, File, _Options) :-
 	    file_name_extension(Spec, Ext, File)
 	),
 	rdfs_individual_of(File, cpack:'File'), !.
+prolog:xref_source_file(Spec, File, Options) :-
+	xref_git, atom(Spec),
+	option(relative_to(Base), Options),
+	uri_normalized(Spec, Base, Spec2),
+	(   File = Spec2
+	;   prolog_file_type(Ext, prolog),
+	    file_name_extension(Spec2, Ext, File)
+	),
+	rdfs_individual_of(File, cpack:'File'), !.
 prolog:xref_source_file(Spec, File, _Options) :-
 	xref_git,
 	search_file(Spec, File), !,
