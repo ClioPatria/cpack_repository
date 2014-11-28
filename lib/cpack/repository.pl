@@ -228,7 +228,7 @@ update_decription(_, _).
 %%	git_export(+BareGitPath, -MirroredURL) is det.
 %
 %	Make sure =|git-daemon-export-ok|= exists and deduce the URL for
-%	cloning using =|git://|=
+%	cloning using =|http://|=
 %
 %	@tbd	Find the proper hostname if we have multiple.  I guess w
 
@@ -239,7 +239,7 @@ git_export(BareGitPath, MirroredURL) :-
 	;   gethostname(GitHost)
 	),
 	absolute_file_name(BareGitPath, AbsGitPath),
-	format(atom(MirroredURL), 'git://~w~w', [GitHost, AbsGitPath]),
+	format(atom(MirroredURL), 'http://~w~w', [GitHost, AbsGitPath]),
 	directory_file_path(BareGitPath, 'git-daemon-export-ok', ExportOK),
 	(   exists_file(ExportOK)
 	->  true
