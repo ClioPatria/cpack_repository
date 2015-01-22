@@ -69,8 +69,8 @@
 
 :- setting(cpack:mirrors, atom, 'cpack-mirrors',
 	   'Directory for mirroring external repositories').
-:- setting(git:host, atom, '',
-	   'Public host for git:// access').
+:- setting(git:http_url, atom, '',
+	   'Prefix for git HTPP urls').
 
 %%	cpack_add_repository(+User, +URL, +Options)
 %
@@ -230,24 +230,27 @@ update_decription(_, _).
 %	Make sure =|git-daemon-export-ok|= exists and deduce the URL for
 %	cloning using =|http://|=
 %
-%	@tbd	Find the proper hostname if we have multiple.  I guess w
+%	@tbd	Make path for http repos configurable
 
 git_export(BareGitPath, MirroredURL) :-
-	(   setting(git:host, Host),
-	    Host \== ''
-	->  GitHost = Host
-	;   setting(http:public_host, Public)
-	->  GitHost = Public
-	;   gethostname(GitHost)
+	(   setting(git:http_url, Prefix),
+	    Prefix \== ''
+	->  true
+	;   (   setting(http:public_host, Public)
+	    ->  GitHost = Public
+	    ;   gethostname(GitHost)
+	    ),
+	    format(string(Prefix), 'http://~w/git/cpack-mirrors/', [GitHost])
 	),
-	absolute_file_name(BareGitPath, AbsGitPath),
-	format(atom(MirroredURL), 'http://~w~w', [GitHost, AbsGitPath]),
+	file_base_name(BareGitPath, RepoDir),
+	format(atom(MirroredURL), '~w~w', [Prefix, RepoDir]),
 	directory_file_path(BareGitPath, 'git-daemon-export-ok', ExportOK),
 	(   exists_file(ExportOK)
 	->  true
-	;   setup_call_cleanup(open(ExportOK, write, Out),
-			       true,
-			       close(Out))
+	;   setup_call_cleanup(
+		open(ExportOK, write, Out),
+		true,
+		close(Out))
 	).
 
 
