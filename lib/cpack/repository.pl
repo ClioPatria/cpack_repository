@@ -183,14 +183,14 @@ update_metadata(BareGitPath, Graph, Options) :-
 	      print_message(error, E)),
 	update_decription(BareGitPath, Graph),
 	add_timestamp(Graph, Options),
+	option(branch(Branch), Options, master),
+	git_hash(BareGitPath, Branch, Hash),
 	(   option(cloned(ClonedURL), Options)
-	->  option(branch(Branch), Options, master),
-	    rdf_bnode(Cloned),
+	->  rdf_bnode(Cloned),
 	    rdf_assert(Graph, cpack:clonedRepository, Cloned, Graph),
 	    rdf_assert(Cloned, rdf:type, cpack:'Repository', Graph),
 	    rdf_assert(Cloned, cpack:gitURL, ClonedURL, Graph),
 	    rdf_assert(Cloned, cpack:branch, literal(Branch), Graph),
-	    git_hash(BareGitPath, Branch, Hash),
 	    rdf_assert(Cloned, cpack:hash, literal(Hash), Graph)
 	;   true
 	),
@@ -199,7 +199,7 @@ update_metadata(BareGitPath, Graph, Options) :-
 	    rdf_assert(Graph, cpack:mirrorRepository, Mirror, Graph),
 	    rdf_assert(Mirror, rdf:type, cpack:'Repository', Graph),
 	    rdf_assert(Mirror, cpack:gitURL, MirroredURL, Graph),
-	    rdf_assert(Cloned, cpack:branch, literal(Branch), Graph),
+	    rdf_assert(Mirror, cpack:branch, literal(Branch), Graph),
 	    rdf_assert(Mirror, cpack:hash, literal(Hash), Graph)
 	;   true
 	),
@@ -367,17 +367,20 @@ cpack_refresh_metadata(BareGitPath) :-
 	file_base_name(BareGitPath, BareGit),
 	file_name_extension(PackageName, git, BareGit),
 	package_graph(PackageName, Graph),
-	git_remote_url(origin, Origin, [directory(BareGitPath)]),
-	git_default_branch(DefBranch, [directory(BareGitPath)]),
+	GitOptions = [askpass(path(echo)), directory(BareGitPath)],
+	(   git_remote_url(origin, Origin, GitOptions),
+	    git_default_branch(DefBranch, GitOptions)
+	->  Options = [ cloned(Origin),
+			branch(DefBranch)
+		      | Extra
+		      ]
+	;   Options = Extra
+	),
 	(   rdf_has(Graph, cpack:submittedDate, Date)
 	->  Extra = [submitted_date(Date)]
 	;   Extra = []
 	),
-	update_metadata(BareGitPath, Graph,
-			[ cloned(Origin),
-			  branch(DefBranch)
-			| Extra
-			]).
+	update_metadata(BareGitPath, Graph, Options).
 
 %%	cpack_refresh_metadata
 %
