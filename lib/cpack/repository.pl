@@ -236,6 +236,8 @@ git_export(BareGitPath, MirroredURL) :-
 	(   setting(git:host, Host),
 	    Host \== ''
 	->  GitHost = Host
+	;   setting(http:public_host, Public)
+	->  GitHost = Public
 	;   gethostname(GitHost)
 	),
 	absolute_file_name(BareGitPath, AbsGitPath),
