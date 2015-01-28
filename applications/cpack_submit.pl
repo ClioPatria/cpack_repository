@@ -151,10 +151,12 @@ cpack_resubmit(Request) :-
 				    ])
 			]),
 	authorized(write(cpack, Pack)),
-	(   var(GitURL)
-	->  rdf_has(Pack, cpack:clonedRepository, GitRepo),
+	(   nonvar(GitURL)
+	->  true
+	;   rdf_has(Pack, cpack:clonedRepository, GitRepo),
 	    rdf_has(GitRepo, cpack:gitURL, GitURL)
-	;   true
+	->  true
+	;   GitURL = '<invalid>'
 	),
 	user_property(User, url(UserURL)),
 	(   var(ReturnTo)
@@ -185,8 +187,12 @@ submit_option(User, _Pack, _Branch, allowed(true)) :-
 %	Present a form to confirm for pulling a new version.
 
 pull_version_form(Pack, GitURL, RepoOptions, MsgOptions) -->
-	{ git_remote_branches(GitURL, Branches),
-	  option(branch(Branch), RepoOptions, master)
+	{ (   catch(git_remote_branches(GitURL, Branches), E,
+		    (print_message(warning, E), fail))
+	  ->  true
+	  ;   Branches = [master],
+	      option(branch(Branch), RepoOptions, master)
+	  )
 	},
 	html([ h1('Pull new version'),
 	       form(action(location_by_id(cpack_resubmit)),
