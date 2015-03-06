@@ -2,9 +2,9 @@
 
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
-    WWW:           http://www.swi-prolog.org
-    Copyright (C): 2010, University of Amsterdam,
-		   VU University Amsterdam
+    WWW:           http://cliopatria.swi-prolog.org
+    Copyright (C): 2010-2015, University of Amsterdam,
+			      VU University Amsterdam
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -45,7 +45,6 @@
 
 This module runs the Prolog  cross-referencer   on  a  submitted pack to
 analyse the package dependencies.
-
 */
 
 %%	xref_cpack(+Pack) is det.
@@ -61,6 +60,7 @@ xref_cpack(Pack) :-
 pack_prolog_file(Pack, File) :-
 	rdf_has(File, cpack:inPack, Pack),
 	rdf_has(File, cpack:name, literal(Name)),
+	\+ rdf_has(File, cpack:ignored, literal(type(xsd:boolean, true))),
 	file_name_extension(_, Ext, Name),
 	prolog_file_type(Ext, prolog).
 

@@ -275,7 +275,8 @@ add_files(BareGitPath, Graph, Options) :-
 	option(branch(Branch), Options, master),
 	git_process_output(['ls-tree', '-lr', Branch],
 			   read_files(Graph),
-			   [directory(BareGitPath)]).
+			   [directory(BareGitPath)]),
+	process_ignore_files(BareGitPath, Graph, Options).
 
 read_files(Graph, In) :-
 	read_line_to_codes(In, Line1),
@@ -331,7 +332,42 @@ file_l(Mode, Type, Hash, Size, Name) -->
 file_type(File, cpack:'PrologFile') :-
 	file_name_extension(_Base, Ext, File),
 	user:prolog_file_type(Ext, prolog), !.
+file_type(File, cpack:'IgnoreFile') :-
+	file_base_name(File, '.cpackignore'), !.
 file_type(_, cpack:'File').
+
+
+%%	process_ignore_files(+BareGitPath, +Graph, +Options)
+%
+%	Allow for .cpackignore files  that   specify  that certain files
+%	should not be analysed.
+
+process_ignore_files(BareGitPath, Graph, Options) :-
+	forall(rdf(IgnFile, rdf:type, cpack:'IgnoreFile', Graph),
+	       process_ignore_file(IgnFile, BareGitPath, Graph, Options)).
+
+process_ignore_file(IgnFile, BareGitPath, Graph, Options) :-
+	option(branch(Branch), Options, master),
+	rdf(IgnFile, cpack:path, literal(Path)),
+	file_directory_name(Path, Dir),
+	setup_call_cleanup(
+	    git_open_file(BareGitPath, Path, Branch, In),
+	    load_ignore_data(In, Dir, Graph),
+	    close(In)).
+
+load_ignore_data(In, Dir, Graph) :-
+	read_line_to_string(In, Line),
+	load_ignore_data(Line, In, Dir, Graph).
+
+load_ignore_data(end_of_file, _, _, _) :- !.
+load_ignore_data(Line, In, Dir, Graph) :-
+	directory_file_path(Dir, Line, Pattern),
+	forall(( rdf(File, cpack:path, literal(Path), Graph),
+		 wildcard_match(Pattern, Path)
+	       ),
+	       rdf_assert(File, cpack:ignored, literal(type(xsd:boolean, true)))),
+	read_line_to_string(In, Line2),
+	load_ignore_data(Line2, In, Dir, Graph).
 
 
 %%	load_meta_data(+BareGitPath, +Graph, +Options) is det.
