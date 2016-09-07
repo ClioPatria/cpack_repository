@@ -160,8 +160,8 @@ cpack_list(Pack, Packs) :-
 cpack_list(Pack, Packs, Ugraph) :-
 	dependency_ugraph(Pack, Ugraph),
 	(   sort_dependencies(Ugraph, Packs)
-	->  check_conflicts(Packs),
-	    check_satisfied(Packs)
+	->  check_conflicts(Packs)
+%	    check_satisfied(Packs)
 	;   domain_error(non_cyclic_dependency_structure, Ugraph)
 	).
 
