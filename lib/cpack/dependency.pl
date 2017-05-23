@@ -311,7 +311,8 @@ other_source(API) :-
 	pi_head(PI, Head),
 	(   predicate_property(Head, multifile)
 	;   predicate_property(Head, autoload(_))
-	).
+	;   predicate_property(Head, public)
+	), !.
 
 pi_head(M:PI, M:Head) :- !,
 	pi_head(PI, Head).
