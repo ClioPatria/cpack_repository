@@ -253,24 +253,34 @@ cannonical_pi(PI, PI).
 %	as cpacks(Path).  I.e.,
 %
 %		library(X) --> cpacks(lib/X)
+%
+%	The last clause finds embedded Prolog packs, assuming these have
+%	a meta-file `pack.pl` and a directory  `prolog` that is attached
+%	to the library path.
 
 search_file(Spec, File) :-	% find applications(...), icons(...), ...
 	path_rule(Spec, cpacks(Segments)),
 	path_segments_atom(Segments, InPack),
-	(   Target = InPack
-	;   user:prolog_file_type(Ext, prolog),
-	    file_name_extension(InPack, Ext, Target)
-	),
+	add_pl_ext(InPack, Target),
 	once(rdf_has(File, cpack:path, literal(Target))).
 search_file(Spec, File) :-	% find Package(...)
 	rdf_has(_Pack, cpack:packageName, literal(PackName)),
 	Spec =.. [PackName,Segments],
 	path_segments_atom(Segments, InPack),
-	(   Target = InPack
-	;   user:prolog_file_type(Ext, prolog),
-	    file_name_extension(InPack, Ext, Target)
-	),
+	add_pl_ext(InPack, Target),
 	once(rdf_has(File, cpack:path, literal(Target))).
+search_file(library(Segments), File) :-
+	path_segments_atom(Segments, Local),
+	add_pl_ext(Local, LocalPL),
+	rdf_has(Meta, cpack:name, literal('pack.pl')),
+	directory_file_path(prolog, LocalPL, LibFile),
+	uri_normalized(LibFile, Meta, File),
+	rdf(File, rdf:type, cpack:'PrologFile').
+
+add_pl_ext(Base, Base).
+add_pl_ext(Base, BasePL) :-
+	user:prolog_file_type(Ext, prolog),
+	file_name_extension(Base, Ext, BasePL).
 
 path_rule(Alias, NewAlias) :-
 	Alias =.. [Name,Local],
