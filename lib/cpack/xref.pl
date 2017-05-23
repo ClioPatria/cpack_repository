@@ -2,9 +2,9 @@
 
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
-    WWW:           http://www.swi-prolog.org
-    Copyright (C): 2010, University of Amsterdam,
-		   VU University Amsterdam
+    WWW:           http://cliopatria.swi-prolog.org
+    Copyright (C): 2010-2017, University of Amsterdam,
+			      VU University Amsterdam
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -37,6 +37,8 @@
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(git)).
+:- use_module(library(option)).
+:- use_module(library(uri)).
 :- use_module(library(prolog_xref)).
 :- use_module(library(prolog_source)).
 :- use_module(repository).
@@ -45,7 +47,6 @@
 
 This module runs the Prolog  cross-referencer   on  a  submitted pack to
 analyse the package dependencies.
-
 */
 
 %%	xref_cpack(+Pack) is det.
@@ -61,6 +62,7 @@ xref_cpack(Pack) :-
 pack_prolog_file(Pack, File) :-
 	rdf_has(File, cpack:inPack, Pack),
 	rdf_has(File, cpack:name, literal(Name)),
+	\+ rdf_has(File, cpack:ignored, literal(type(xsd:boolean, true))),
 	file_name_extension(_, Ext, Name),
 	prolog_file_type(Ext, prolog).
 
@@ -387,11 +389,11 @@ prolog:xref_source_file(Spec, File, _Options) :-
 prolog:xref_source_file(Spec, File, Options) :-
 	xref_git,
 	atom(Spec),
-	option(relative_to(URI), Options),
-	uri_normalized(Spec, URI, File0),
-	(   File = File0
+	option(relative_to(Base), Options),
+	uri_normalized(Spec, Base, Spec2),
+	(   File = Spec2
 	;   prolog_file_type(Ext, prolog),
-	    file_name_extension(File0, Ext, File)
+	    file_name_extension(Spec2, Ext, File)
 	),
 	rdfs_individual_of(File, cpack:'File'), !.
 prolog:xref_source_file(Spec, File, _Options) :-

@@ -160,8 +160,8 @@ cpack_list(Pack, Packs) :-
 cpack_list(Pack, Packs, Ugraph) :-
 	dependency_ugraph(Pack, Ugraph),
 	(   sort_dependencies(Ugraph, Packs)
-	->  check_conflicts(Packs),
-	    check_satisfied(Packs)
+	->  check_conflicts(Packs)
+%	    check_satisfied(Packs)
 	;   domain_error(non_cyclic_dependency_structure, Ugraph)
 	).
 
@@ -289,10 +289,12 @@ file_not_satisfied(File, AllReasons) :-
 %
 %	@tbd We do not yet keep track of locally defined predicates
 
-file_not_satisfied_due(File, double_import(PI,File1,File2)) :-
-	file_imports_pi_from(File, File1, PI),
-	file_imports_pi_from(File, File2, PI),
-	File1 \== File2.
+% file_imports_pi_from/3 is too aggressive because it does not
+% deal with use_module/2.
+%file_not_satisfied_due(File, double_import(PI,File1,File2)) :-
+%	file_imports_pi_from(File, File1, PI),
+%	file_imports_pi_from(File, File2, PI),
+%	File1 @> File2.
 file_not_satisfied_due(File, file_not_found(FileRef)) :-
 	rdf_has(File, cpack:usesFile, FileRef),
 	rdfs_individual_of(FileRef, cpack:'FileRef'),

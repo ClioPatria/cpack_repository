@@ -69,8 +69,8 @@
 
 :- setting(cpack:mirrors, atom, 'cpack-mirrors',
 	   'Directory for mirroring external repositories').
-:- setting(git:host, atom, '',
-	   'Public host for git:// access').
+:- setting(git:http_url, atom, '',
+	   'Prefix for git HTPP urls').
 
 %%	cpack_add_repository(+User, +URL, +Options)
 %
@@ -183,14 +183,14 @@ update_metadata(BareGitPath, Graph, Options) :-
 	      print_message(error, E)),
 	update_decription(BareGitPath, Graph),
 	add_timestamp(Graph, Options),
+	option(branch(Branch), Options, master),
+	git_hash(BareGitPath, Branch, Hash),
 	(   option(cloned(ClonedURL), Options)
-	->  option(branch(Branch), Options, master),
-	    rdf_bnode(Cloned),
+	->  rdf_bnode(Cloned),
 	    rdf_assert(Graph, cpack:clonedRepository, Cloned, Graph),
 	    rdf_assert(Cloned, rdf:type, cpack:'Repository', Graph),
 	    rdf_assert(Cloned, cpack:gitURL, ClonedURL, Graph),
 	    rdf_assert(Cloned, cpack:branch, literal(Branch), Graph),
-	    git_hash(BareGitPath, Branch, Hash),
 	    rdf_assert(Cloned, cpack:hash, literal(Hash), Graph)
 	;   true
 	),
@@ -199,7 +199,7 @@ update_metadata(BareGitPath, Graph, Options) :-
 	    rdf_assert(Graph, cpack:mirrorRepository, Mirror, Graph),
 	    rdf_assert(Mirror, rdf:type, cpack:'Repository', Graph),
 	    rdf_assert(Mirror, cpack:gitURL, MirroredURL, Graph),
-	    rdf_assert(Cloned, cpack:branch, literal(Branch), Graph),
+	    rdf_assert(Mirror, cpack:branch, literal(Branch), Graph),
 	    rdf_assert(Mirror, cpack:hash, literal(Hash), Graph)
 	;   true
 	),
@@ -228,24 +228,29 @@ update_decription(_, _).
 %%	git_export(+BareGitPath, -MirroredURL) is det.
 %
 %	Make sure =|git-daemon-export-ok|= exists and deduce the URL for
-%	cloning using =|git://|=
+%	cloning using =|http://|=
 %
-%	@tbd	Find the proper hostname if we have multiple.  I guess w
+%	@tbd	Make path for http repos configurable
 
 git_export(BareGitPath, MirroredURL) :-
-	(   setting(git:host, Host),
-	    Host \== ''
-	->  GitHost = Host
-	;   gethostname(GitHost)
+	(   setting(git:http_url, Prefix),
+	    Prefix \== ''
+	->  true
+	;   (   setting(http:public_host, Public)
+	    ->  GitHost = Public
+	    ;   gethostname(GitHost)
+	    ),
+	    format(string(Prefix), 'http://~w/git/cpack-mirrors/', [GitHost])
 	),
-	absolute_file_name(BareGitPath, AbsGitPath),
-	format(atom(MirroredURL), 'git://~w~w', [GitHost, AbsGitPath]),
+	file_base_name(BareGitPath, RepoDir),
+	format(atom(MirroredURL), '~w~w', [Prefix, RepoDir]),
 	directory_file_path(BareGitPath, 'git-daemon-export-ok', ExportOK),
 	(   exists_file(ExportOK)
 	->  true
-	;   setup_call_cleanup(open(ExportOK, write, Out),
-			       true,
-			       close(Out))
+	;   setup_call_cleanup(
+		open(ExportOK, write, Out),
+		true,
+		close(Out))
 	).
 
 
@@ -270,7 +275,8 @@ add_files(BareGitPath, Graph, Options) :-
 	option(branch(Branch), Options, master),
 	git_process_output(['ls-tree', '-lr', Branch],
 			   read_files(Graph),
-			   [directory(BareGitPath)]).
+			   [directory(BareGitPath)]),
+	process_ignore_files(BareGitPath, Graph, Options).
 
 read_files(Graph, In) :-
 	read_line_to_codes(In, Line1),
@@ -326,7 +332,42 @@ file_l(Mode, Type, Hash, Size, Name) -->
 file_type(File, cpack:'PrologFile') :-
 	file_name_extension(_Base, Ext, File),
 	user:prolog_file_type(Ext, prolog), !.
+file_type(File, cpack:'IgnoreFile') :-
+	file_base_name(File, '.cpackignore'), !.
 file_type(_, cpack:'File').
+
+
+%%	process_ignore_files(+BareGitPath, +Graph, +Options)
+%
+%	Allow for .cpackignore files  that   specify  that certain files
+%	should not be analysed.
+
+process_ignore_files(BareGitPath, Graph, Options) :-
+	forall(rdf(IgnFile, rdf:type, cpack:'IgnoreFile', Graph),
+	       process_ignore_file(IgnFile, BareGitPath, Graph, Options)).
+
+process_ignore_file(IgnFile, BareGitPath, Graph, Options) :-
+	option(branch(Branch), Options, master),
+	rdf(IgnFile, cpack:path, literal(Path)),
+	file_directory_name(Path, Dir),
+	setup_call_cleanup(
+	    git_open_file(BareGitPath, Path, Branch, In),
+	    load_ignore_data(In, Dir, Graph),
+	    close(In)).
+
+load_ignore_data(In, Dir, Graph) :-
+	read_line_to_string(In, Line),
+	load_ignore_data(Line, In, Dir, Graph).
+
+load_ignore_data(end_of_file, _, _, _) :- !.
+load_ignore_data(Line, In, Dir, Graph) :-
+	directory_file_path(Dir, Line, Pattern),
+	forall(( rdf(File, cpack:path, literal(Path), Graph),
+		 wildcard_match(Pattern, Path)
+	       ),
+	       rdf_assert(File, cpack:ignored, literal(type(xsd:boolean, true)))),
+	read_line_to_string(In, Line2),
+	load_ignore_data(Line2, In, Dir, Graph).
 
 
 %%	load_meta_data(+BareGitPath, +Graph, +Options) is det.
@@ -367,17 +408,20 @@ cpack_refresh_metadata(BareGitPath) :-
 	file_base_name(BareGitPath, BareGit),
 	file_name_extension(PackageName, git, BareGit),
 	package_graph(PackageName, Graph),
-	git_remote_url(origin, Origin, [directory(BareGitPath)]),
-	git_default_branch(DefBranch, [directory(BareGitPath)]),
+	GitOptions = [askpass(path(echo)), directory(BareGitPath)],
+	(   git_remote_url(origin, Origin, GitOptions),
+	    git_default_branch(DefBranch, GitOptions)
+	->  Options = [ cloned(Origin),
+			branch(DefBranch)
+		      | Extra
+		      ]
+	;   Options = Extra
+	),
 	(   rdf_has(Graph, cpack:submittedDate, Date)
 	->  Extra = [submitted_date(Date)]
 	;   Extra = []
 	),
-	update_metadata(BareGitPath, Graph,
-			[ cloned(Origin),
-			  branch(DefBranch)
-			| Extra
-			]).
+	update_metadata(BareGitPath, Graph, Options).
 
 %%	cpack_refresh_metadata
 %
