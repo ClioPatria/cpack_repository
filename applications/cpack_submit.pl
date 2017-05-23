@@ -379,9 +379,16 @@ cpack_clone_server(Request) :-
 %
 %	API to reload all metadata.
 
-cpack_refresh_metadata_api(_Request) :-
+cpack_refresh_metadata_api(Request) :-
 	authorized(write(cpack, refresh_metadata)),
-	call_showing_messages(cpack_refresh_metadata,
-			      []).
+	http_parameters(Request,
+			[ p(Pack, [optional(true)])
+			]),
+	(   var(Pack)
+	->  call_showing_messages(cpack_refresh_metadata, [])
+	;   file_name_extension(Pack, git, Dir),
+	    directory_file_path('cpack-mirrors', Dir, FullDir),
+	    call_showing_messages(cpack_refresh_metadata(FullDir), [])
+	).
 
 
