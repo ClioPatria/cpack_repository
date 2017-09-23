@@ -507,17 +507,26 @@ cpack_uri(Type, Name, URI) :-
 	http_current_host(Request, Host, Port,
 			  [ global(true)
 			  ]),
+	scheme(Scheme, DefaultPort),
 	uri_authority_data(host, AD, Host),
-	(   Port =:= 80
+	(   Port =:= DefaultPort
 	->  true
 	;   uri_authority_data(port, AD, Port)
 	),
 	uri_authority_components(Authority, AD),
-	uri_data(scheme, Data, http),
+	uri_data(scheme, Data, Scheme),
 	uri_data(authority, Data, Authority),
 	uri_data(path, Data, Root),
 	uri_components(Start, Data),
 	atom_concat(Start, Name, URI).
+
+scheme(Scheme, Port) :-
+	setting(http:public_scheme, Scheme), !,
+	scheme_default_port(Scheme, Port).
+scheme(http, 80).
+
+scheme_default_port(https, 443).
+scheme_default_port(http, 80).
 
 ensure_slash(Root0, Root) :-
 	(   sub_atom(Root0, _, _, 0, /)
