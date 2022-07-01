@@ -60,13 +60,14 @@ cpack_dependency_graph(_URI, _Options) -->
 	[].
 
 
-%%	shape(+Start, +URI, -Shape) is semidet.
+%%	shape(+Start, +URI, -Shape, +Options) is semidet.
 %
 %	Specify GraphViz shape for URI. This   predicate  calls the hook
 %	cliopatria:node_shape/3.
 
 shape(Start, Start,
-      [ shape(box3d),style(filled),fillcolor('#ff85fd') ]).
+      [ shape(box3d),style(filled),fillcolor('#ff85fd') ],
+      _Options).
 
 %%	dependency_graph(+URI, -Triples) is det.
 %
@@ -79,7 +80,7 @@ dependency_graph(URI, RDF) :-
 	(   length(RDF2, Len2),
 	    Len2 < 20
 	->  RDF3 = RDF2
-	;   bagify_graph(RDF2, RDF3, Bags, []) 	% Create bags of similar resources
+	;   bagify_graph(RDF2, RDF3, Bags, [])	% Create bags of similar resources
 	),
 	append(RDF3, Bags, RDF).
 
