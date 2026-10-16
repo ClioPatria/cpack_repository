@@ -31,6 +31,7 @@
 :- module(cpack_submit, []).
 :- include(bundle(html_page)).
 :- use_module(library(apply)).
+:- use_module(library(settings)).
 :- use_module(library(lists)).
 :- use_module(library(git)).
 :- use_module(library(semweb/rdf_db)).

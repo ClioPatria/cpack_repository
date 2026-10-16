@@ -38,6 +38,7 @@
 :- use_module(library(semweb/rdfs)).
 :- use_module(library(git)).
 :- use_module(library(option)).
+:- use_module(library(settings)).
 :- use_module(library(uri)).
 :- use_module(library(prolog_xref)).
 :- use_module(library(prolog_source)).

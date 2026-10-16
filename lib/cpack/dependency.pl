@@ -40,6 +40,8 @@
 	    file_calls_public_from/3	% +File, -UsedFile, +PI
 	  ]).
 :- use_module(library(assoc)).
+:- use_module(library(settings)).
+:- use_module(library(debug)).
 :- use_module(library(ugraphs)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).

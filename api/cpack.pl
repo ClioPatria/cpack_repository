@@ -31,6 +31,7 @@
 :- module(api_cpack,
 	  [
 	  ]).
+:- use_module(library(cpack/iri)).
 :- use_module(library(cpack/dependency)).
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdfs)).
